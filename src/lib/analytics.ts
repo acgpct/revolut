@@ -1,60 +1,77 @@
 import type { Analytics } from "./types";
 
+/* ─── helpers ──────────────────────────────────────────── */
+const get = (r: Record<string, string>, key: string) =>
+  r[key] ?? r[key.toLowerCase()] ?? r[key.toUpperCase()] ?? "";
+
+const avg = (arr: number[]) =>
+  arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/* ─── KYC priority ─────────────────────────────────────── */
+const KYC_PRIORITY: Record<string, number> = { PASSED: 4, PENDING: 3, FAILED: 2, NONE: 1 };
+const PRIORITY_TO_KYC: Record<number, string> = { 4: "PASSED", 3: "PENDING", 2: "FAILED", 1: "NONE" };
+
 export function computeAnalytics(rows: Record<string, string>[]): Analytics {
-  const fraudRows = rows.filter((r) => r.IS_FRAUD === "True" || r.is_fraud === "True");
-  const legitRows = rows.filter((r) => r.IS_FRAUD === "False" || r.is_fraud === "False");
 
-  // Normalise column names
-  const get = (r: Record<string, string>, ...keys: string[]) => {
-    for (const k of keys) {
-      if (r[k] !== undefined) return r[k];
-      if (r[k.toLowerCase()] !== undefined) return r[k.toLowerCase()];
-      if (r[k.toUpperCase()] !== undefined) return r[k.toUpperCase()];
-    }
-    return "";
-  };
-
+  /* ── Normalise rows ─────────────────────────────────── */
   const norm = rows.map((r) => ({
-    user_id: get(r, "USER_ID", "user_id"),
-    type: get(r, "TYPE", "type"),
-    amount: parseFloat(get(r, "AMOUNT", "amount") || "0"),
-    currency: get(r, "CURRENCY", "currency"),
-    merchant_country: get(r, "MERCHANT_COUNTRY", "merchant_country"),
-    kyc: get(r, "KYC", "kyc"),
-    birth_year: parseInt(get(r, "BIRTH_YEAR", "birth_year") || "0"),
-    country: get(r, "COUNTRY", "country"),
-    is_fraud: get(r, "IS_FRAUD", "is_fraud") === "True",
+    user_id:          get(r, "USER_ID"),
+    type:             get(r, "TYPE"),
+    amount:           parseFloat(get(r, "AMOUNT") || "0"),
+    currency:         get(r, "CURRENCY"),
+    merchant_country: get(r, "MERCHANT_COUNTRY"),
+    kyc:              get(r, "KYC"),
+    birth_year:       parseInt(get(r, "BIRTH_YEAR") || "0"),
+    country:          get(r, "COUNTRY"),
+    is_fraud:         get(r, "IS_FRAUD") === "True",
   }));
 
   const fraudNorm = norm.filter((r) => r.is_fraud);
   const legitNorm = norm.filter((r) => !r.is_fraud);
 
-  const totalAmount = norm.reduce((s, r) => s + r.amount, 0);
-  const fraudAmount = fraudNorm.reduce((s, r) => s + r.amount, 0);
-  const uniqueUsers = new Set(norm.map((r) => r.user_id)).size;
+  /* ── Overview ───────────────────────────────────────── */
+  const totalUsers   = new Set(norm.map((r) => r.user_id)).size;
+  const totalTxns    = norm.length;
+  const fraudTxns    = fraudNorm.length;
+  const totalAmount  = norm.reduce((s, r) => s + r.amount, 0);
+  const fraudAmount  = fraudNorm.reduce((s, r) => s + r.amount, 0);
 
-  // Brief 1
-  const topupUsers = new Set(norm.filter((r) => r.type === "TOPUP").map((r) => r.user_id));
-  const spendingTypes = new Set(["CARD_PAYMENT", "P2P", "ATM", "BANK_TRANSFER"]);
-  const spendingUsers = new Set(norm.filter((r) => spendingTypes.has(r.type)).map((r) => r.user_id));
-  // Marketing definition: any user who topped up AND spent (includes fraudsters)
-  const convertedUsers = new Set([...topupUsers].filter((u) => spendingUsers.has(u)));
+  /* ── Step 1: KYC status per user (max-priority rule) ── */
+  // Each user may have multiple rows with different KYC values.
+  // Take the most advanced status per user.
+  const userKycPriority: Record<string, number> = {};
+  for (const r of norm) {
+    const p = KYC_PRIORITY[r.kyc] ?? 0;
+    userKycPriority[r.user_id] = Math.max(userKycPriority[r.user_id] ?? 0, p);
+  }
+  const userKycStatus: Record<string, string> = {};
+  for (const [uid, p] of Object.entries(userKycPriority)) {
+    userKycStatus[uid] = PRIORITY_TO_KYC[p] ?? "NONE";
+  }
 
-  // Revolut definition: KYC PASSED + ≥1 legitimate (non-fraud) CARD_PAYMENT
-  // Note: dataset has no registration date, so the 30-day window condition cannot be applied.
-  // The interchange-revenue condition is satisfied strictly by CARD_PAYMENT (not ATM/P2P/transfer).
-  const kycPassedUsers = new Set(norm.filter((r) => r.kyc === "PASSED").map((r) => r.user_id));
-  const legitCardPaymentUsers = new Set(legitNorm.filter((r) => r.type === "CARD_PAYMENT").map((r) => r.user_id));
-  const revolutConvertedUsers = new Set([...kycPassedUsers].filter((u) => legitCardPaymentUsers.has(u)));
-
-  // Legacy strict definition (TOPUP + spending, zero fraud history) — kept for comparison
-  const fraudUserIds = new Set(norm.filter((r) => r.is_fraud).map((r) => r.user_id));
-  const cleanTopupUsers = new Set(legitNorm.filter((r) => r.type === "TOPUP").map((r) => r.user_id));
-  const cleanSpendingUsers = new Set(legitNorm.filter((r) => spendingTypes.has(r.type)).map((r) => r.user_id));
-  const strictConvertedUsers = new Set(
-    [...cleanTopupUsers].filter((u) => cleanSpendingUsers.has(u) && !fraudUserIds.has(u))
+  /* ── Brief 1 — Conversion Rate ─────────────────────── */
+  // Key user sets
+  const kycAttemptedUsers = new Set(
+    Object.entries(userKycStatus).filter(([, s]) => s !== "NONE").map(([u]) => u)
   );
+  const kycPassedUsers = new Set(
+    Object.entries(userKycStatus).filter(([, s]) => s === "PASSED").map(([u]) => u)
+  );
+  const topupUsers   = new Set(norm.filter((r) => r.type === "TOPUP").map((r) => r.user_id));
+  const cardUsers    = new Set(norm.filter((r) => r.type === "CARD_PAYMENT").map((r) => r.user_id));
 
+  // Marketing rate = card_users / kyc_attempted  (~79.2%)
+  // Inflated: numerator includes fraud card payments; denominator is kyc-attempted, not all users
+  const marketingRate = round2((cardUsers.size / (kycAttemptedUsers.size || 1)) * 100);
+
+  // Strict rate = (KYC-passed ∩ legit-card-users) / total_users  (65.6%)
+  const legitCardUsers = new Set(legitNorm.filter((r) => r.type === "CARD_PAYMENT").map((r) => r.user_id));
+  const strictConverted = new Set([...kycPassedUsers].filter((u) => legitCardUsers.has(u)));
+  const strictRate = round2((strictConverted.size / (totalUsers || 1)) * 100);
+
+  // Transaction-type map
   const txnTypeMap: Record<string, { count: number; fraud: number }> = {};
   for (const r of norm) {
     if (!txnTypeMap[r.type]) txnTypeMap[r.type] = { count: 0, fraud: 0 };
@@ -62,131 +79,194 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
     if (r.is_fraud) txnTypeMap[r.type].fraud++;
   }
 
-  // Brief 2A
-  const fraudByCountry: Record<string, number> = {};
-  const totalByCountry: Record<string, number> = {};
-  const amountByCountry: Record<string, number> = {};
-  const fraudAmountByCountry: Record<string, number> = {};
+  /* ── Brief 2A — Geographic Risk ────────────────────── */
+  // Group by MERCHANT_COUNTRY, filter ≥ 50 transactions
+  const geoMap: Record<string, { total: number; fraud: number; fraudAmt: number; totalAmt: number }> = {};
   for (const r of norm) {
-    totalByCountry[r.country] = (totalByCountry[r.country] || 0) + 1;
-    amountByCountry[r.country] = (amountByCountry[r.country] || 0) + r.amount;
+    const c = r.merchant_country;
+    if (!geoMap[c]) geoMap[c] = { total: 0, fraud: 0, fraudAmt: 0, totalAmt: 0 };
+    geoMap[c].total++;
+    geoMap[c].totalAmt += r.amount;
     if (r.is_fraud) {
-      fraudByCountry[r.country] = (fraudByCountry[r.country] || 0) + 1;
-      fraudAmountByCountry[r.country] = (fraudAmountByCountry[r.country] || 0) + r.amount;
+      geoMap[c].fraud++;
+      geoMap[c].fraudAmt += r.amount;
     }
   }
 
-  const geoRisk = Object.entries(totalByCountry)
-    .filter(([, total]) => total >= 50)
-    .map(([country, total]) => ({
+  const geoList = Object.entries(geoMap)
+    .filter(([, g]) => g.total >= 50)
+    .map(([country, g]) => ({
       country,
-      total,
-      fraud: fraudByCountry[country] || 0,
-      rate: Math.round(((fraudByCountry[country] || 0) / total) * 10000) / 100,
-      fraud_amount: Math.round(fraudAmountByCountry[country] || 0),
-      total_amount: Math.round(amountByCountry[country] || 0),
-    }))
-    .sort((a, b) => b.fraud - a.fraud)
-    .slice(0, 20);
+      total:        g.total,
+      fraud:        g.fraud,
+      rate:         round2((g.fraud / g.total) * 100),
+      fraud_amount: Math.round(g.fraudAmt),
+      total_amount: Math.round(g.totalAmt),
+    }));
 
-  // Brief 2B
-  const kycPassedFraud = fraudNorm.filter((r) => r.kyc === "PASSED");
-  const kycPassedLegit = legitNorm.filter((r) => r.kyc === "PASSED");
+  // Three sorted views; expose top-20 by volume as default
+  const byVolume = [...geoList].sort((a, b) => b.fraud - a.fraud);
 
-  const typePct = (data: typeof norm) => {
-    const c: Record<string, number> = {};
-    const total = data.length;
-    for (const r of data) c[r.type] = (c[r.type] || 0) + 1;
-    return Object.fromEntries(Object.entries(c).map(([k, v]) => [k, Math.round((v / total) * 1000) / 10]));
+  /* ── Brief 2B — KYC-Passed Fraudsters ──────────────── */
+  // fraudster_users = any user with ≥1 fraud transaction
+  const fraudsterUsers = new Set(fraudNorm.map((r) => r.user_id));
+
+  // kyc_fraud_users = intersection of kycPassedUsers ∩ fraudsterUsers
+  const kycFraudUserIds  = new Set([...kycPassedUsers].filter((u) => fraudsterUsers.has(u)));
+  const kycLegitUserIds  = new Set([...kycPassedUsers].filter((u) => !fraudsterUsers.has(u)));
+
+  // Transactions belonging to each group
+  const kycFraudTxns     = norm.filter((r) => kycFraudUserIds.has(r.user_id));
+  const kycLegitTxns     = norm.filter((r) => kycLegitUserIds.has(r.user_id));
+  const kycFraudFraudTxns = kycFraudTxns.filter((r) => r.is_fraud);   // fraud txns of kyc-fraud users
+  const kycLegitLegitTxns = kycLegitTxns.filter((r) => !r.is_fraud);  // legit txns of kyc-legit users
+
+  // Per-user aggregates for kyc fraud users
+  const kycFraudPerUser: Record<string, { txns: number; countries: Set<string>; birth: number }> = {};
+  for (const r of kycFraudTxns) {
+    if (!kycFraudPerUser[r.user_id]) kycFraudPerUser[r.user_id] = { txns: 0, countries: new Set(), birth: r.birth_year };
+    kycFraudPerUser[r.user_id].txns++;
+    kycFraudPerUser[r.user_id].countries.add(r.merchant_country);
+  }
+  const kycFraudUserList = Object.values(kycFraudPerUser);
+
+  // Per-user aggregates for kyc legit users
+  const kycLegitPerUser: Record<string, { txns: number; countries: Set<string>; birth: number }> = {};
+  for (const r of kycLegitTxns) {
+    if (!kycLegitPerUser[r.user_id]) kycLegitPerUser[r.user_id] = { txns: 0, countries: new Set(), birth: r.birth_year };
+    kycLegitPerUser[r.user_id].txns++;
+    kycLegitPerUser[r.user_id].countries.add(r.merchant_country);
+  }
+  const kycLegitUserList = Object.values(kycLegitPerUser);
+
+  // Type % distribution
+  const typePct = (txns: typeof norm) => {
+    const total = txns.length || 1;
+    const counts: Record<string, number> = {};
+    for (const r of txns) counts[r.type] = (counts[r.type] || 0) + 1;
+    return Object.fromEntries(
+      Object.entries(counts).map(([k, v]) => [k, round2((v / total) * 100)])
+    );
   };
 
-  const kycStatus: Record<string, number> = {};
-  const kycFraudStatus: Record<string, number> = {};
-  for (const r of norm) kycStatus[r.kyc] = (kycStatus[r.kyc] || 0) + 1;
-  for (const r of fraudNorm) kycFraudStatus[r.kyc] = (kycFraudStatus[r.kyc] || 0) + 1;
+  // KYC status counts (transaction-level, for the status breakdown panel)
+  const kycStatusTxns: Record<string, number> = {};
+  const kycFraudStatusTxns: Record<string, number> = {};
+  for (const r of norm)      kycStatusTxns[r.kyc]      = (kycStatusTxns[r.kyc]      || 0) + 1;
+  for (const r of fraudNorm) kycFraudStatusTxns[r.kyc] = (kycFraudStatusTxns[r.kyc] || 0) + 1;
 
-  // Fraud by type
+  /* ── Fraud by type (all users) ──────────────────────── */
   const fraudByType = ["CARD_PAYMENT", "TOPUP", "ATM", "BANK_TRANSFER", "P2P"].map((typ) => {
-    const typeRows = norm.filter((r) => r.type === typ);
-    const typeFraud = typeRows.filter((r) => r.is_fraud);
+    const all   = norm.filter((r) => r.type === typ);
+    const fraud = all.filter((r) => r.is_fraud);
     return {
-      type: typ,
-      total: typeRows.length,
-      fraud: typeFraud.length,
-      rate: typeRows.length ? Math.round((typeFraud.length / typeRows.length) * 10000) / 100 : 0,
-      fraud_amount: Math.round(typeFraud.reduce((s, r) => s + r.amount, 0)),
+      type:         typ,
+      total:        all.length,
+      fraud:        fraud.length,
+      rate:         all.length ? round2((fraud.length / all.length) * 100) : 0,
+      fraud_amount: Math.round(fraud.reduce((s, r) => s + r.amount, 0)),
     };
   });
 
-  // Bonus: Top 5 Fraudsters
-  const userFraud: Record<string, { txns: number; amount: number; types: Record<string, number>; countries: Set<string>; kyc: string }> = {};
+  /* ── Bonus — Top 5 Fraudsters (normalised composite) ── */
+  // Step 1: per-user fraud aggregation
+  const userFraud: Record<string, {
+    txns: number; amount: number; avgAmount: number;
+    types: Record<string, number>; countries: Set<string>; kyc: string;
+  }> = {};
   for (const r of fraudNorm) {
-    if (!userFraud[r.user_id]) userFraud[r.user_id] = { txns: 0, amount: 0, types: {}, countries: new Set(), kyc: "" };
+    if (!userFraud[r.user_id])
+      userFraud[r.user_id] = { txns: 0, amount: 0, avgAmount: 0, types: {}, countries: new Set(), kyc: r.kyc };
     userFraud[r.user_id].txns++;
     userFraud[r.user_id].amount += r.amount;
     userFraud[r.user_id].types[r.type] = (userFraud[r.user_id].types[r.type] || 0) + 1;
     userFraud[r.user_id].countries.add(r.merchant_country);
-    userFraud[r.user_id].kyc = r.kyc;
+    // Use max-priority KYC for the user
+    if ((KYC_PRIORITY[r.kyc] ?? 0) > (KYC_PRIORITY[userFraud[r.user_id].kyc] ?? 0))
+      userFraud[r.user_id].kyc = r.kyc;
   }
+  for (const u of Object.values(userFraud)) u.avgAmount = u.txns ? u.amount / u.txns : 0;
 
+  // Step 2: compute normalisation maxima
+  const allFraudUsers = Object.values(userFraud);
+  const maxAmount  = Math.max(...allFraudUsers.map((u) => u.amount),  1);
+  const maxTxns    = Math.max(...allFraudUsers.map((u) => u.txns),    1);
+  const maxGeo     = Math.max(...allFraudUsers.map((u) => u.countries.size), 1);
+  const maxAvg     = Math.max(...allFraudUsers.map((u) => u.avgAmount), 1);
+
+  // Step 3: composite score  = 0.40×amount + 0.30×txns + 0.20×geo + 0.10×avg
   const ranked = Object.entries(userFraud)
-    .map(([uid, data]) => ({
-      id: uid.slice(0, 8) + "...",
-      full_id: uid,
-      txns: data.txns,
-      amount: Math.round(data.amount),
-      types_used: Object.keys(data.types).length,
-      countries_hit: data.countries.size,
-      kyc: data.kyc,
-      type_breakdown: data.types,
-      score: Math.round((data.txns * 0.4 + (data.amount / 1000) * 0.3 + Object.keys(data.types).length * 5 + data.countries.size * 3) * 10) / 10,
-    }))
+    .map(([uid, u]) => {
+      const score =
+        0.40 * (u.amount  / maxAmount) +
+        0.30 * (u.txns    / maxTxns)   +
+        0.20 * (u.countries.size / maxGeo) +
+        0.10 * (u.avgAmount / maxAvg);
+      return {
+        id:            uid.slice(0, 8) + "…",
+        full_id:       uid,
+        txns:          u.txns,
+        amount:        Math.round(u.amount),
+        types_used:    Object.keys(u.types).length,
+        countries_hit: u.countries.size,
+        kyc:           userKycStatus[uid] ?? u.kyc,
+        type_breakdown: u.types,
+        score:         Math.round(score * 1000) / 1000,
+      };
+    })
     .sort((a, b) => b.score - a.score);
 
+  /* ── Assemble ───────────────────────────────────────── */
   return {
     overview: {
-      total_txns: norm.length,
-      total_fraud: fraudNorm.length,
-      fraud_rate: Math.round((fraudNorm.length / norm.length) * 10000) / 100,
-      total_amount: Math.round(totalAmount),
-      fraud_amount: Math.round(fraudAmount),
-      unique_users: uniqueUsers,
-      fraud_amount_pct: Math.round((fraudAmount / totalAmount) * 10000) / 100,
+      total_txns:       totalTxns,
+      total_fraud:      fraudTxns,
+      fraud_rate:       round2((fraudTxns / totalTxns) * 100),
+      total_amount:     Math.round(totalAmount),
+      fraud_amount:     Math.round(fraudAmount),
+      unique_users:     totalUsers,
+      fraud_amount_pct: round2((fraudAmount / totalAmount) * 100),
     },
     brief1: {
-      unique_users: uniqueUsers,
-      topup_users: topupUsers.size,
-      spending_users: spendingUsers.size,
-      converted_users: convertedUsers.size,
-      strict_converted_users: strictConvertedUsers.size,
-      kyc_passed_users: kycPassedUsers.size,
-      legit_card_users: legitCardPaymentUsers.size,
-      revolut_converted_users: revolutConvertedUsers.size,
-      // Marketing: topped up + spent (any user, including fraudsters) / all users ≈ 78%
-      marketing_rate: Math.round((convertedUsers.size / uniqueUsers) * 10000) / 100,
-      // Strict: topped up + spent with zero fraud history / all users
-      strict_rate: Math.round((strictConvertedUsers.size / uniqueUsers) * 10000) / 100,
-      // Revolut definition: KYC PASSED + ≥1 legitimate CARD_PAYMENT / all users
-      revolut_rate: Math.round((revolutConvertedUsers.size / uniqueUsers) * 10000) / 100,
+      unique_users:            totalUsers,
+      kyc_attempted_users:     kycAttemptedUsers.size,
+      kyc_passed_users:        kycPassedUsers.size,
+      topup_users:             topupUsers.size,
+      card_users:              cardUsers.size,
+      legit_card_users:        legitCardUsers.size,
+      strict_converted_users:  strictConverted.size,
+      // legacy fields kept for backwards compat
+      spending_users:          0,
+      converted_users:         0,
+      revolut_converted_users: strictConverted.size,
+      marketing_rate:          marketingRate,
+      strict_rate:             strictRate,
+      revolut_rate:            strictRate,
       txn_types: Object.entries(txnTypeMap).map(([type, d]) => ({ type, ...d })),
     },
-    brief2a: { geo_risk: geoRisk },
+    brief2a: { geo_risk: byVolume.slice(0, 20) },
     brief2b: {
-      fraud_count: kycPassedFraud.length,
-      legit_count: kycPassedLegit.length,
-      fraud_type_pct: typePct(kycPassedFraud),
-      legit_type_pct: typePct(kycPassedLegit),
-      fraud_avg_amount: kycPassedFraud.length ? Math.round(kycPassedFraud.reduce((s, r) => s + r.amount, 0) / kycPassedFraud.length) : 0,
-      legit_avg_amount: kycPassedLegit.length ? Math.round(kycPassedLegit.reduce((s, r) => s + r.amount, 0) / kycPassedLegit.length) : 0,
-      fraud_avg_birth: kycPassedFraud.length ? Math.round(kycPassedFraud.reduce((s, r) => s + r.birth_year, 0) / kycPassedFraud.length) : 0,
-      legit_avg_birth: kycPassedLegit.length ? Math.round(kycPassedLegit.reduce((s, r) => s + r.birth_year, 0) / kycPassedLegit.length) : 0,
+      kyc_fraud_users:        kycFraudUserIds.size,
+      kyc_legit_users:        kycLegitUserIds.size,
+      fraud_count:            kycFraudFraudTxns.length,
+      legit_count:            kycLegitLegitTxns.length,
+      fraud_type_pct:         typePct(kycFraudFraudTxns),
+      legit_type_pct:         typePct(kycLegitLegitTxns),
+      fraud_avg_amount:       kycFraudFraudTxns.length ? Math.round(avg(kycFraudFraudTxns.map((r) => r.amount))) : 0,
+      legit_avg_amount:       kycLegitLegitTxns.length ? Math.round(avg(kycLegitLegitTxns.map((r) => r.amount))) : 0,
+      fraud_avg_birth:        kycFraudUserList.length  ? Math.round(avg(kycFraudUserList.map((u) => u.birth)))   : 0,
+      legit_avg_birth:        kycLegitUserList.length  ? Math.round(avg(kycLegitUserList.map((u) => u.birth)))   : 0,
+      fraud_avg_txns_per_user: kycFraudUserList.length ? round2(avg(kycFraudUserList.map((u) => u.txns)))        : 0,
+      legit_avg_txns_per_user: kycLegitUserList.length ? round2(avg(kycLegitUserList.map((u) => u.txns)))        : 0,
+      fraud_avg_countries:    kycFraudUserList.length  ? round2(avg(kycFraudUserList.map((u) => u.countries.size))) : 0,
+      legit_avg_countries:    kycLegitUserList.length  ? round2(avg(kycLegitUserList.map((u) => u.countries.size))) : 0,
     },
-    kyc_status: kycStatus,
-    kyc_fraud_status: kycFraudStatus,
-    fraud_by_type: fraudByType,
+    kyc_status:       kycStatusTxns,
+    kyc_fraud_status: kycFraudStatusTxns,
+    fraud_by_type:    fraudByType,
     bonus: {
-      top_fraudsters: ranked.slice(0, 5),
-      total_fraudsters: ranked.length,
+      top_fraudsters:    ranked.slice(0, 5),
+      total_fraudsters:  ranked.length,
     },
   };
 }

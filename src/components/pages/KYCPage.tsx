@@ -59,24 +59,53 @@ export default function KYCPage({ data, fraudByType, kycStatus, kycFraudStatus }
         description={`${fmt(data.fraud_count)} fraudulent transactions from users who passed KYC checks, compared against ${fmt(data.legit_count)} legitimate KYC-passed users.`}
       />
 
-      {/* Summary stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 40 }}>
+      {/* User count summary */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
         {[
-          { label: "KYC-Passed Fraud Txns", value: fmt(data.fraud_count), red: false },
-          { label: "Avg Fraud Transaction",  value: fmtM(data.fraud_avg_amount), red: true },
-          { label: "Avg Legit Transaction",  value: fmtM(data.legit_avg_amount), red: false },
+          { label: "KYC-Passed Fraudsters",  value: fmt(data.kyc_fraud_users ?? 0), note: "100% fraud ratio — zero legitimate transactions", red: true },
+          { label: "KYC-Passed Legit Users", value: fmt(data.kyc_legit_users ?? 0), note: "Comparison group for behavioural analysis", red: false },
         ].map((s) => (
-          <div key={s.label} style={{
-            background: "#ffffff", border: "1px solid #ebebeb", borderRadius: 12, padding: "24px 28px",
-          }}>
+          <div key={s.label} style={{ background: "#ffffff", border: "1px solid #ebebeb", borderRadius: 12, padding: "28px 32px" }}>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#a3a3a3", marginBottom: 10 }}>
               {s.label}
             </p>
-            <p style={{ fontSize: 32, fontWeight: 700, color: s.red ? "#cf1322" : "#0f0f0f", letterSpacing: "-0.03em", lineHeight: 1 }}>
+            <p style={{ fontSize: 36, fontWeight: 700, color: s.red ? "#cf1322" : "#0f0f0f", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 8 }}>
               {s.value}
             </p>
+            <p style={{ fontSize: 12, color: "#a3a3a3" }}>{s.note}</p>
           </div>
         ))}
+      </div>
+
+      {/* Per-user behavioural comparison */}
+      <div style={{ background: "#ffffff", border: "1px solid #ebebeb", borderRadius: 12, marginBottom: 32, overflow: "hidden" }}>
+        <div style={{ padding: "16px 24px", borderBottom: "1px solid #f5f5f5" }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#171717" }}>Behavioural Comparison — Per-User Averages</p>
+        </div>
+        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #f5f5f5" }}>
+              {["Metric", "KYC-Passed Fraudsters", "Legitimate Users"].map((h, i) => (
+                <th key={h} style={{ padding: "12px 24px", textAlign: i === 0 ? "left" : "right", fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "#a3a3a3" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { label: "Avg transactions / user", fraud: String(data.fraud_avg_txns_per_user ?? 0), legit: String(data.legit_avg_txns_per_user ?? 0) },
+              { label: "Avg countries / user",    fraud: String(data.fraud_avg_countries ?? 0),    legit: String(data.legit_avg_countries ?? 0) },
+              { label: "Avg transaction size",     fraud: fmtM(data.fraud_avg_amount),              legit: fmtM(data.legit_avg_amount) },
+              { label: "Avg birth year",           fraud: String(data.fraud_avg_birth ?? 0),        legit: String(data.legit_avg_birth ?? 0) },
+              { label: "Fraud ratio",              fraud: "100%",                                   legit: "0%" },
+            ].map((r, i) => (
+              <tr key={r.label} style={{ borderBottom: i < 4 ? "1px solid #fafafa" : "none" }}>
+                <td style={{ padding: "14px 24px", fontWeight: 500, color: "#404040" }}>{r.label}</td>
+                <td style={{ padding: "14px 24px", textAlign: "right", fontWeight: 600, color: "#cf1322" }}>{r.fraud}</td>
+                <td style={{ padding: "14px 24px", textAlign: "right", fontWeight: 600, color: "#0f0f0f" }}>{r.legit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>

@@ -33,12 +33,13 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
 
   const total = data.unique_users || 1;
   const funnelSteps = [
-    { label: "Registered Users",  value: data.unique_users            ?? 0, pct: 100 },
-    { label: "Passed KYC",        value: data.kyc_passed_users        ?? 0, pct: Math.round(((data.kyc_passed_users ?? 0) / total) * 100) },
-    { label: "Revolut Converted", value: data.revolut_converted_users ?? 0, pct: Math.round(((data.revolut_converted_users ?? 0) / total) * 100) },
+    { label: "Registered Users",  value: data.unique_users             ?? 0, pct: 100 },
+    { label: "KYC Attempted",     value: data.kyc_attempted_users      ?? 0, pct: Math.round(((data.kyc_attempted_users      ?? 0) / total) * 100) },
+    { label: "KYC Passed",        value: data.kyc_passed_users         ?? 0, pct: Math.round(((data.kyc_passed_users         ?? 0) / total) * 100) },
+    { label: "Strictly Converted",value: data.strict_converted_users   ?? 0, pct: Math.round(((data.strict_converted_users   ?? 0) / total) * 100) },
   ];
 
-  const gap = ((data.marketing_rate ?? 0) - (data.revolut_rate ?? 0)).toFixed(1);
+  const gap = ((data.marketing_rate ?? 0) - (data.strict_rate ?? 0)).toFixed(1);
 
   return (
     <div style={{ padding: "48px 56px", maxWidth: 1100, margin: "0 auto" }}>
@@ -54,13 +55,13 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
           {
             label: "Marketing Definition",
             value: `${data.marketing_rate}%`,
-            note: "TOPUP + any spending / all users (incl. fraudsters)",
+            note: `${fmt(data.card_users ?? 0)} card users ÷ ${fmt(data.kyc_attempted_users ?? 0)} KYC-attempted`,
             muted: true,
           },
           {
-            label: "Revolut Definition",
-            value: `${data.revolut_rate}%`,
-            note: "KYC passed + ≥1 legitimate card payment / all users",
+            label: "Strict Definition",
+            value: `${data.strict_rate}%`,
+            note: `${fmt(data.strict_converted_users ?? 0)} users (KYC passed + ≥1 legit card payment) ÷ ${fmt(data.unique_users)} total`,
             muted: false,
           },
         ].map((r) => (
@@ -114,11 +115,11 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
             {gap}pp gap between marketing and the correct conversion rate
           </p>
           <p style={{ fontSize: 13, color: "#737373", lineHeight: 1.6 }}>
-            Marketing's {data.marketing_rate ?? 0}% counts fraudsters and non-card transactions (ATM, P2P, bank transfers) that generate no interchange revenue.
-            The Revolut definition requires <strong style={{ color: "#404040" }}>KYC passed</strong> and{" "}
-            <strong style={{ color: "#404040" }}>≥1 legitimate card payment</strong> — the only signal of a revenue-positive primary account.{" "}
-            {fmt((data.topup_users ?? 0) - (data.revolut_converted_users ?? 0))} users are excluded under the correct definition.
-            The 30-day registration window cannot be applied: this dataset contains no date column.
+            Marketing's {data.marketing_rate ?? 0}% uses <strong style={{ color: "#404040" }}>card users ÷ KYC-attempted</strong> — a smaller denominator that inflates the rate,
+            and a numerator that includes fraudulent card payments.
+            The strict definition uses <strong style={{ color: "#404040" }}>KYC-passed ∩ ≥1 legitimate card payment ÷ all users</strong>,
+            giving {data.strict_rate}%. Only {fmt(data.strict_converted_users ?? 0)} of {fmt(data.unique_users)} users
+            are genuinely converted. Note: this dataset contains no date column, so the 30-day window condition cannot be applied.
           </p>
         </div>
       </div>

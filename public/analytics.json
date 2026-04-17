@@ -1,1 +1,382 @@
-{"overview":{"total_txns":688651,"total_fraud":14543,"fraud_rate":2.11,"total_amount":21847968661,"fraud_amount":428393579,"unique_users":8021,"fraud_amount_pct":1.96},"brief1":{"unique_users":8021,"topup_users":7764,"spending_users":6651,"converted_users":6394,"strict_converted_users":6102,"kyc_passed_users":6989,"legit_card_users":5568,"revolut_converted_users":5263,"marketing_rate":79.72,"strict_rate":76.08,"revolut_rate":65.62,"txn_types":[{"type":"CARD_PAYMENT","count":436570,"fraud":6849},{"type":"P2P","count":56338,"fraud":436},{"type":"TOPUP","count":132561,"fraud":3792},{"type":"ATM","count":47324,"fraud":2236},{"type":"BANK_TRANSFER","count":15858,"fraud":1230}]},"brief2a":{"geo_risk":[{"country":"GB","total":385343,"fraud":13088,"rate":3.4,"fraud_amount":382196099,"total_amount":13624184887},{"country":"DE","total":9012,"fraud":508,"rate":5.64,"fraud_amount":2950255,"total_amount":117498392},{"country":"PL","total":25725,"fraud":347,"rate":1.35,"fraud_amount":16774942,"total_amount":634390448},{"country":"FR","total":60184,"fraud":208,"rate":0.35,"fraud_amount":4371049,"total_amount":1047295847},{"country":"ES","total":19510,"fraud":157,"rate":0.8,"fraud_amount":18480301,"total_amount":262858343},{"country":"LT","total":50725,"fraud":157,"rate":0.31,"fraud_amount":874261,"total_amount":511558837},{"country":"RO","total":6903,"fraud":58,"rate":0.84,"fraud_amount":2406202,"total_amount":152651998},{"country":"CZ","total":2265,"fraud":11,"rate":0.49,"fraud_amount":138081,"total_amount":205552560},{"country":"NL","total":6102,"fraud":5,"rate":0.08,"fraud_amount":88303,"total_amount":117064668},{"country":"BE","total":2919,"fraud":4,"rate":0.14,"fraud_amount":114086,"total_amount":38611178},{"country":"GR","total":8458,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":146710869},{"country":"IT","total":4973,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":49244642},{"country":"JE","total":626,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":3786330},{"country":"RU","total":737,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":14910205},{"country":"US","total":86,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":813126},{"country":"MV","total":168,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":1500915},{"country":"CH","total":6485,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":290617657},{"country":"LV","total":8526,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":211824795},{"country":"IE","total":44731,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":479304032},{"country":"SK","total":3280,"fraud":0,"rate":0,"fraud_amount":0,"total_amount":13509251}]},"brief2b":{"fraud_count":12310,"legit_count":665471,"fraud_type_pct":{"CARD_PAYMENT":45.6,"TOPUP":26.4,"ATM":16.5,"BANK_TRANSFER":9,"P2P":2.5},"legit_type_pct":{"CARD_PAYMENT":63.8,"P2P":8.4,"TOPUP":18.9,"ATM":6.7,"BANK_TRANSFER":2.2},"fraud_avg_amount":27102,"legit_avg_amount":32134,"fraud_avg_birth":1987,"legit_avg_birth":1985},"kyc_status":{"PASSED":677781,"FAILED":2354,"NONE":5607,"PENDING":2909},"kyc_fraud_status":{"PENDING":1866,"PASSED":12310,"FAILED":367},"fraud_by_type":[{"type":"CARD_PAYMENT","total":436570,"fraud":6849,"rate":1.57,"fraud_amount":90870005},{"type":"TOPUP","total":132561,"fraud":3792,"rate":2.86,"fraud_amount":167982840},{"type":"ATM","total":47324,"fraud":2236,"rate":4.72,"fraud_amount":76897108},{"type":"BANK_TRANSFER","total":15858,"fraud":1230,"rate":7.76,"fraud_amount":84040651},{"type":"P2P","total":56338,"fraud":436,"rate":0.77,"fraud_amount":8602975}],"bonus":{"top_fraudsters":[{"id":"dc283b17...","full_id":"dc283b17-bbe1-4ae9-a11c-0029d5ae71d9","txns":1029,"amount":60986488,"types_used":5,"countries_hit":12,"kyc":"PENDING","type_breakdown":{"TOPUP":52,"CARD_PAYMENT":826,"ATM":83,"P2P":48,"BANK_TRANSFER":20},"score":18768.5},{"id":"310667d1...","full_id":"310667d1-92c6-4fc7-83f1-55b61773ace5","txns":60,"amount":13460553,"types_used":4,"countries_hit":3,"kyc":"PASSED","type_breakdown":{"TOPUP":12,"BANK_TRANSFER":11,"P2P":7,"CARD_PAYMENT":30},"score":4091.2},{"id":"b8271606...","full_id":"b8271606-4633-4d8f-8729-a2c8ebb8a49f","txns":340,"amount":11827642,"types_used":5,"countries_hit":4,"kyc":"PASSED","type_breakdown":{"TOPUP":31,"CARD_PAYMENT":233,"ATM":55,"BANK_TRANSFER":9,"P2P":12},"score":3721.3},{"id":"2182c140...","full_id":"2182c140-9de3-4afc-90c1-cbce1ead4238","txns":14,"amount":11910750,"types_used":2,"countries_hit":1,"kyc":"PASSED","type_breakdown":{"TOPUP":7,"BANK_TRANSFER":7},"score":3591.8},{"id":"2ba04c04...","full_id":"2ba04c04-64a4-48f9-8f50-896f573a0845","txns":200,"amount":6107270,"types_used":5,"countries_hit":3,"kyc":"PASSED","type_breakdown":{"TOPUP":28,"CARD_PAYMENT":140,"ATM":25,"BANK_TRANSFER":5,"P2P":2},"score":1946.2}],"total_fraudsters":299}}
+{
+  "overview": {
+    "total_txns": 688651,
+    "total_fraud": 14543,
+    "fraud_rate": 2.11,
+    "total_amount": 21847968661,
+    "fraud_amount": 428393579,
+    "unique_users": 8021,
+    "fraud_amount_pct": 1.96
+  },
+  "brief1": {
+    "unique_users": 8021,
+    "kyc_attempted_users": 7308,
+    "kyc_passed_users": 6989,
+    "topup_users": 7764,
+    "card_users": 5789,
+    "legit_card_users": 5568,
+    "strict_converted_users": 5263,
+    "spending_users": 0,
+    "converted_users": 0,
+    "revolut_converted_users": 5263,
+    "marketing_rate": 79.21,
+    "strict_rate": 65.62,
+    "revolut_rate": 65.62,
+    "txn_types": [
+      {
+        "type": "CARD_PAYMENT",
+        "count": 436570,
+        "fraud": 6849
+      },
+      {
+        "type": "P2P",
+        "count": 56338,
+        "fraud": 436
+      },
+      {
+        "type": "TOPUP",
+        "count": 132561,
+        "fraud": 3792
+      },
+      {
+        "type": "ATM",
+        "count": 47324,
+        "fraud": 2236
+      },
+      {
+        "type": "BANK_TRANSFER",
+        "count": 15858,
+        "fraud": 1230
+      }
+    ]
+  },
+  "brief2a": {
+    "geo_risk": [
+      {
+        "country": "GBR",
+        "total": 146200,
+        "fraud": 6631,
+        "rate": 4.54,
+        "fraud_amount": 101377935,
+        "total_amount": 1739993427
+      },
+      {
+        "country": "",
+        "total": 205578,
+        "fraud": 5464,
+        "rate": 2.66,
+        "fraud_amount": 260703670,
+        "total_amount": 11298607792
+      },
+      {
+        "country": "IRL",
+        "total": 26196,
+        "fraud": 345,
+        "rate": 1.32,
+        "fraud_amount": 1691696,
+        "total_amount": 459151713
+      },
+      {
+        "country": "POL",
+        "total": 10028,
+        "fraud": 283,
+        "rate": 2.82,
+        "fraud_amount": 7874887,
+        "total_amount": 59784133
+      },
+      {
+        "country": "NLD",
+        "total": 18532,
+        "fraud": 272,
+        "rate": 1.47,
+        "fraud_amount": 310165,
+        "total_amount": 245149357
+      },
+      {
+        "country": "USA",
+        "total": 46050,
+        "fraud": 259,
+        "rate": 0.56,
+        "fraud_amount": 46478264,
+        "total_amount": 349296949
+      },
+      {
+        "country": "NOR",
+        "total": 3143,
+        "fraud": 184,
+        "rate": 5.85,
+        "fraud_amount": 983572,
+        "total_amount": 48448165
+      },
+      {
+        "country": "LTU",
+        "total": 25597,
+        "fraud": 178,
+        "rate": 0.7,
+        "fraud_amount": 672293,
+        "total_amount": 109579163
+      },
+      {
+        "country": "GIB",
+        "total": 880,
+        "fraud": 138,
+        "rate": 15.68,
+        "fraud_amount": 2151752,
+        "total_amount": 5034668
+      },
+      {
+        "country": "LUX",
+        "total": 8023,
+        "fraud": 137,
+        "rate": 1.71,
+        "fraud_amount": 220737,
+        "total_amount": 68840625
+      },
+      {
+        "country": "ESP",
+        "total": 23329,
+        "fraud": 128,
+        "rate": 0.55,
+        "fraud_amount": 3486851,
+        "total_amount": 180954021
+      },
+      {
+        "country": "FRA",
+        "total": 28980,
+        "fraud": 124,
+        "rate": 0.43,
+        "fraud_amount": 460459,
+        "total_amount": 3062153680
+      },
+      {
+        "country": "DEU",
+        "total": 8522,
+        "fraud": 92,
+        "rate": 1.08,
+        "fraud_amount": 215637,
+        "total_amount": 82946439
+      },
+      {
+        "country": "CYP",
+        "total": 2538,
+        "fraud": 64,
+        "rate": 2.52,
+        "fraud_amount": 57422,
+        "total_amount": 52984834
+      },
+      {
+        "country": "AUT",
+        "total": 1900,
+        "fraud": 52,
+        "rate": 2.74,
+        "fraud_amount": 453090,
+        "total_amount": 13097800
+      },
+      {
+        "country": "THA",
+        "total": 3236,
+        "fraud": 43,
+        "rate": 1.33,
+        "fraud_amount": 466530,
+        "total_amount": 220357339
+      },
+      {
+        "country": "MLT",
+        "total": 2070,
+        "fraud": 25,
+        "rate": 1.21,
+        "fraud_amount": 115400,
+        "total_amount": 120806781
+      },
+      {
+        "country": "ROM",
+        "total": 2358,
+        "fraud": 15,
+        "rate": 0.64,
+        "fraud_amount": 47688,
+        "total_amount": 32604919
+      },
+      {
+        "country": "CHE",
+        "total": 4642,
+        "fraud": 14,
+        "rate": 0.3,
+        "fraud_amount": 58202,
+        "total_amount": 27753968
+      },
+      {
+        "country": "SWE",
+        "total": 3959,
+        "fraud": 13,
+        "rate": 0.33,
+        "fraud_amount": 18950,
+        "total_amount": 74524740
+      }
+    ]
+  },
+  "brief2b": {
+    "kyc_fraud_users": 260,
+    "kyc_legit_users": 6729,
+    "fraud_count": 12310,
+    "legit_count": 665471,
+    "fraud_type_pct": {
+      "CARD_PAYMENT": 45.61,
+      "TOPUP": 26.39,
+      "ATM": 16.47,
+      "BANK_TRANSFER": 9.03,
+      "P2P": 2.49
+    },
+    "legit_type_pct": {
+      "CARD_PAYMENT": 63.78,
+      "P2P": 8.38,
+      "TOPUP": 18.93,
+      "ATM": 6.73,
+      "BANK_TRANSFER": 2.18
+    },
+    "fraud_avg_amount": 27102,
+    "legit_avg_amount": 32134,
+    "fraud_avg_birth": 1988,
+    "legit_avg_birth": 1983,
+    "fraud_avg_txns_per_user": 47.35,
+    "legit_avg_txns_per_user": 98.9,
+    "fraud_avg_countries": 2.52,
+    "legit_avg_countries": 4.75
+  },
+  "kyc_status": {
+    "PASSED": 677781,
+    "FAILED": 2354,
+    "NONE": 5607,
+    "PENDING": 2909
+  },
+  "kyc_fraud_status": {
+    "PENDING": 1866,
+    "PASSED": 12310,
+    "FAILED": 367
+  },
+  "fraud_by_type": [
+    {
+      "type": "CARD_PAYMENT",
+      "total": 436570,
+      "fraud": 6849,
+      "rate": 1.57,
+      "fraud_amount": 90870005
+    },
+    {
+      "type": "TOPUP",
+      "total": 132561,
+      "fraud": 3792,
+      "rate": 2.86,
+      "fraud_amount": 167982840
+    },
+    {
+      "type": "ATM",
+      "total": 47324,
+      "fraud": 2236,
+      "rate": 4.72,
+      "fraud_amount": 76897108
+    },
+    {
+      "type": "BANK_TRANSFER",
+      "total": 15858,
+      "fraud": 1230,
+      "rate": 7.76,
+      "fraud_amount": 84040651
+    },
+    {
+      "type": "P2P",
+      "total": 56338,
+      "fraud": 436,
+      "rate": 0.77,
+      "fraud_amount": 8602975
+    }
+  ],
+  "bonus": {
+    "top_fraudsters": [
+      {
+        "id": "dc283b17…",
+        "full_id": "dc283b17-bbe1-4ae9-a11c-0029d5ae71d9",
+        "txns": 1029,
+        "amount": 60986488,
+        "types_used": 5,
+        "countries_hit": 12,
+        "kyc": "PENDING",
+        "type_breakdown": {
+          "TOPUP": 52,
+          "CARD_PAYMENT": 826,
+          "ATM": 83,
+          "P2P": 48,
+          "BANK_TRANSFER": 20
+        },
+        "score": 0.833
+      },
+      {
+        "id": "6eb51e3f…",
+        "full_id": "6eb51e3f-6e8b-45ee-bf01-82495df9c930",
+        "txns": 590,
+        "amount": 3918984,
+        "types_used": 4,
+        "countries_hit": 19,
+        "kyc": "PASSED",
+        "type_breakdown": {
+          "CARD_PAYMENT": 426,
+          "TOPUP": 110,
+          "ATM": 46,
+          "BANK_TRANSFER": 8
+        },
+        "score": 0.398
+      },
+      {
+        "id": "4ee8690a…",
+        "full_id": "4ee8690a-ebf7-435b-9fe2-103e8f83edc6",
+        "txns": 508,
+        "amount": 2950255,
+        "types_used": 5,
+        "countries_hit": 9,
+        "kyc": "PASSED",
+        "type_breakdown": {
+          "TOPUP": 59,
+          "BANK_TRANSFER": 61,
+          "CARD_PAYMENT": 319,
+          "ATM": 50,
+          "P2P": 19
+        },
+        "score": 0.263
+      },
+      {
+        "id": "b8271606…",
+        "full_id": "b8271606-4633-4d8f-8729-a2c8ebb8a49f",
+        "txns": 340,
+        "amount": 11827642,
+        "types_used": 5,
+        "countries_hit": 4,
+        "kyc": "PASSED",
+        "type_breakdown": {
+          "TOPUP": 31,
+          "CARD_PAYMENT": 233,
+          "ATM": 55,
+          "BANK_TRANSFER": 9,
+          "P2P": 12
+        },
+        "score": 0.223
+      },
+      {
+        "id": "25c2ecb3…",
+        "full_id": "25c2ecb3-5ec7-4fa6-8fc3-bbcf3a691217",
+        "txns": 460,
+        "amount": 3620232,
+        "types_used": 5,
+        "countries_hit": 6,
+        "kyc": "PASSED",
+        "type_breakdown": {
+          "CARD_PAYMENT": 314,
+          "BANK_TRANSFER": 28,
+          "TOPUP": 41,
+          "ATM": 47,
+          "P2P": 30
+        },
+        "score": 0.222
+      }
+    ],
+    "total_fraudsters": 299
+  }
+}

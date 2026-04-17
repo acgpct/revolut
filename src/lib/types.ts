@@ -16,16 +16,19 @@ export interface TxnType {
 
 export interface Brief1 {
   unique_users: number;
+  kyc_attempted_users: number;
+  kyc_passed_users: number;
   topup_users: number;
+  card_users: number;
+  legit_card_users: number;
+  strict_converted_users: number;
+  // legacy / compat
   spending_users: number;
   converted_users: number;
-  strict_converted_users: number;
-  kyc_passed_users: number;
-  legit_card_users: number;
   revolut_converted_users: number;
-  strict_rate: number;
-  marketing_rate: number;
-  revolut_rate: number;
+  marketing_rate: number;   // card_users / kyc_attempted  (~79.2%)
+  strict_rate: number;      // strict_converted / total_users  (65.6%)
+  revolut_rate: number;     // alias for strict_rate
   txn_types: TxnType[];
 }
 
@@ -39,12 +42,24 @@ export interface GeoRisk {
 }
 
 export interface Brief2b {
-  fraud_count: number;
-  legit_count: number;
+  // User counts
+  kyc_fraud_users: number;       // KYC-passed users who are fraudsters (260)
+  kyc_legit_users: number;       // KYC-passed users who are legitimate (6,729)
+  // Transaction counts
+  fraud_count: number;           // fraud txns from kyc-fraud users
+  legit_count: number;           // legit txns from kyc-legit users
+  // Transaction type distributions
   fraud_type_pct: Record<string, number>;
   legit_type_pct: Record<string, number>;
+  // Per-transaction averages
   fraud_avg_amount: number;
   legit_avg_amount: number;
+  // Per-user behavioural averages
+  fraud_avg_txns_per_user: number;
+  legit_avg_txns_per_user: number;
+  fraud_avg_countries: number;
+  legit_avg_countries: number;
+  // Demographics
   fraud_avg_birth: number;
   legit_avg_birth: number;
 }
