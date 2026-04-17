@@ -248,7 +248,7 @@ function ConversionSlide({ data }: { data: Analytics }) {
     <Slide>
       <SlideTitle
         overline="Brief 1 · Conversion Rate"
-        title="Marketing Claims 79.72%.\nReality: 65.62%."
+        title={`Marketing Claims ${brief1.marketing_rate}%.\nReality: ${brief1.revolut_rate}%.`}
       />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
         <div style={{ border: "1px solid #ebebeb", borderRadius: 14, padding: "40px 40px", background: "#fafafa" }}>
@@ -393,7 +393,7 @@ function ConversionFunnelSlide({ data }: { data: Analytics }) {
           </ResponsiveContainer>
           <div style={{ marginTop: 12, padding: "12px 16px", background: "#fff8f8", border: "1px solid #fde8e8", borderRadius: 10 }}>
             <p style={{ fontSize: 12, color: "#cf1322", fontWeight: 700 }}>
-              Bank Transfer: 7.76% — 5× the platform average
+              Bank Transfer: 7.76% — 3.7× the platform average ({data.overview.fraud_rate}%)
             </p>
           </div>
         </div>
@@ -790,35 +790,42 @@ function FraudstersSlide({ data }: { data: Analytics }) {
   );
 }
 
-function RecommendationsSlide() {
+function RecommendationsSlide({ data }: { data: Analytics }) {
+  const geo     = data.brief2a.geo_risk;
+  const topVol  = geo[0];
+  const topRate = [...geo].sort((a,b)=>b.rate-a.rate)[0];
+  const top1    = data.bonus.top_fraudsters[0];
+  const atmDiff = ((data.brief2b.fraud_type_pct["ATM"]||0) - (data.brief2b.legit_type_pct["ATM"]||0)).toFixed(1);
+  const btDiff  = ((data.brief2b.fraud_type_pct["BANK_TRANSFER"]||0) - (data.brief2b.legit_type_pct["BANK_TRANSFER"]||0)).toFixed(1);
+
   const items = [
     {
       tag: "B1",
       color: "#ebebeb",
       text: "#404040",
       headline: "Realign conversion KPIs",
-      body: "Retire the 79.72% marketing figure. Report 65.62% as the primary metric — KYC-passed users with ≥1 legitimate card payment.",
+      body: `Retire the ${data.brief1.marketing_rate}% marketing figure. Report ${data.brief1.revolut_rate}% as the primary metric — KYC-passed users with ≥1 legitimate card payment.`,
     },
     {
       tag: "B2A",
       color: "#ebebeb",
       text: "#404040",
       headline: "Dual-axis geographic monitoring",
-      body: "Track GB for volume escalations and DE for rate spikes independently. A single fraud-count dashboard masks the DE risk signal.",
+      body: `Track ${topVol.country} for volume escalations (${(top1?.txns||0) > 0 ? fmt(topVol.fraud) : "—"} fraud cases) and ${topRate.country} for rate spikes (${topRate.rate}%) independently. A single fraud-count dashboard masks the ${topRate.country} risk signal.`,
     },
     {
       tag: "B2B",
       color: "#ebebeb",
       text: "#404040",
       headline: "Behavioural rules on top of KYC",
-      body: "Flag unusual ATM (+9.8pp) and bank transfer (+6.8pp) weighting relative to a user's card-payment baseline. Age-profile outliers warrant enhanced due diligence.",
+      body: `Flag unusual ATM (+${atmDiff}pp) and bank transfer (+${btDiff}pp) weighting relative to a user's card-payment baseline. Age-profile outliers warrant enhanced due diligence.`,
     },
     {
       tag: "★",
       color: "#0f0f0f",
       text: "#ffffff",
       headline: "Immediate action on top 5 actors",
-      body: "dc283b17 alone accounts for £61M across 12 countries — suspend pending investigation. Composite scoring should run nightly to surface emerging actors from the 299-strong fraud network.",
+      body: `${top1?.id || "dc283b17"} alone accounts for ${fmtB(top1?.amount||0)} across ${top1?.countries_hit||0} countries — suspend pending investigation. Composite scoring should run nightly to surface emerging actors from the ${data.bonus.total_fraudsters}-strong fraud network.`,
     },
   ];
 
@@ -881,7 +888,7 @@ function buildSlides(data: Analytics) {
     { id: "geo",           label: "Geographic Risk",   render: () => <GeographicSlide data={data} /> },
     { id: "kyc",           label: "KYC Patterns",      render: () => <KYCSlide data={data} /> },
     { id: "fraudsters",    label: "Top Fraudsters",    render: () => <FraudstersSlide data={data} /> },
-    { id: "recs",          label: "Recommendations",   render: () => <RecommendationsSlide /> },
+    { id: "recs",          label: "Recommendations",   render: () => <RecommendationsSlide data={data} /> },
     { id: "end",           label: "End",               render: () => <EndSlide /> },
   ];
 }

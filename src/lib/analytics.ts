@@ -96,7 +96,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   const geoList = Object.entries(geoMap)
     .filter(([, g]) => g.total >= 50)
     .map(([country, g]) => ({
-      country,
+      country: country === "" ? "Unknown / Null" : country,
       total:        g.total,
       fraud:        g.fraud,
       rate:         round2((g.fraud / g.total) * 100),
@@ -104,7 +104,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       total_amount: Math.round(g.totalAmt),
     }));
 
-  // Three sorted views; expose top-20 by volume as default
+  // Sorted by fraud volume; full list kept so rate-chart can surface low-volume / high-rate countries (e.g. MDA)
   const byVolume = [...geoList].sort((a, b) => b.fraud - a.fraud);
 
   /* ── Brief 2B — KYC-Passed Fraudsters ──────────────── */
@@ -244,7 +244,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       revolut_rate:            strictRate,
       txn_types: Object.entries(txnTypeMap).map(([type, d]) => ({ type, ...d })),
     },
-    brief2a: { geo_risk: byVolume.slice(0, 20) },
+    brief2a: { geo_risk: byVolume },
     brief2b: {
       kyc_fraud_users:        kycFraudUserIds.size,
       kyc_legit_users:        kycLegitUserIds.size,

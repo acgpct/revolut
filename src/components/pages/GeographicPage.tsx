@@ -12,19 +12,62 @@ const fmtM = (n: number) => {
   return `£${n}`;
 };
 
-/** Convert ISO 3166-1 alpha-2 code → flag emoji */
-const flag = (code: string) =>
-  code.toUpperCase().split("").map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join("");
-
-const COUNTRY_NAMES: Record<string, string> = {
-  GB: "United Kingdom", DE: "Germany",    PL: "Poland",      FR: "France",
-  ES: "Spain",          LT: "Lithuania",  RO: "Romania",     CZ: "Czech Republic",
-  NL: "Netherlands",    BE: "Belgium",    GR: "Greece",      IT: "Italy",
-  JE: "Jersey",         RU: "Russia",     US: "United States", MV: "Maldives",
-  CH: "Switzerland",    LV: "Latvia",     IE: "Ireland",     SK: "Slovakia",
+/** ISO 3166-1 alpha-3 → alpha-2 mapping (covers all codes seen in this dataset) */
+const ALPHA3_TO_2: Record<string, string> = {
+  ABW:"AW",AFG:"AF",AGO:"AO",AIA:"AI",ALA:"AX",ALB:"AL",AND:"AD",ANT:"AN",
+  ARE:"AE",ARG:"AR",ARM:"AM",ATG:"AG",AUS:"AU",AUT:"AT",AZE:"AZ",
+  BEL:"BE",BEN:"BJ",BGD:"BD",BGR:"BG",BHR:"BH",BHS:"BS",BIH:"BA",
+  BLR:"BY",BLZ:"BZ",BMU:"BM",BOL:"BO",BRA:"BR",BRB:"BB",BRN:"BN",BWA:"BW",
+  CAN:"CA",CHE:"CH",CHL:"CL",CHN:"CN",CIV:"CI",COK:"CK",COL:"CO",CPV:"CV",
+  CRI:"CR",CUB:"CU",CUW:"CW",CYM:"KY",CYP:"CY",CZE:"CZ",
+  DEU:"DE",DJI:"DJ",DNK:"DK",DOM:"DO",DZA:"DZ",
+  ECU:"EC",EGY:"EG",ESP:"ES",EST:"EE",ETH:"ET",
+  FIN:"FI",FJI:"FJ",FRA:"FR",
+  GBR:"GB",GEO:"GE",GGY:"GG",GHA:"GH",GIB:"GI",GLP:"GP",GMB:"GM",
+  GRC:"GR",GRD:"GD",GRL:"GL",GTM:"GT",GUY:"GY",
+  HKG:"HK",HND:"HN",HRV:"HR",HTI:"HT",HUN:"HU",
+  IDN:"ID",IMN:"IM",IND:"IN",IRL:"IE",ISL:"IS",ISR:"IL",ITA:"IT",
+  JAM:"JM",JEY:"JE",JOR:"JO",JPN:"JP",
+  KAZ:"KZ",KEN:"KE",KGZ:"KG",KHM:"KH",KNA:"KN",KOR:"KR",KWT:"KW",
+  LAO:"LA",LBN:"LB",LCA:"LC",LIE:"LI",LKA:"LK",LTU:"LT",LUX:"LU",LVA:"LV",
+  MAC:"MO",MAR:"MA",MCO:"MC",MDA:"MD",MDG:"MG",MDV:"MV",MEX:"MX",
+  MKD:"MK",MLT:"MT",MMR:"MM",MNE:"ME",MNG:"MN",MOZ:"MZ",MTQ:"MQ",MUS:"MU",MYS:"MY",
+  NAM:"NA",NCL:"NC",NGA:"NG",NIC:"NI",NLD:"NL",NOR:"NO",NPL:"NP",NZL:"NZ",
+  OMN:"OM",PAK:"PK",PAN:"PA",PER:"PE",PHL:"PH",POL:"PL",PRI:"PR",PRT:"PT",
+  PRY:"PY",PSE:"PS",PYF:"PF",QAT:"QA",REU:"RE",ROU:"RO",RUS:"RU",RWA:"RW",
+  SAU:"SA",SEN:"SN",SGP:"SG",SLV:"SV",SMR:"SM",SRB:"RS",SUR:"SR",
+  SVK:"SK",SVN:"SI",SWE:"SE",SXM:"SX",SYC:"SC",
+  THA:"TH",TJK:"TJ",TTO:"TT",TUN:"TN",TUR:"TR",TWN:"TW",TZA:"TZ",
+  UGA:"UG",UKR:"UA",URY:"UY",USA:"US",UZB:"UZ",
+  VAT:"VA",VCT:"VC",VEN:"VE",VGB:"VG",VIR:"VI",VNM:"VN",
+  ZAF:"ZA",ZMB:"ZM",ZWE:"ZW",
 };
 
-const name = (code: string) => COUNTRY_NAMES[code] ?? code;
+const COUNTRY_NAMES: Record<string, string> = {
+  GBR:"United Kingdom", DEU:"Germany",     POL:"Poland",       FRA:"France",
+  ESP:"Spain",          LTU:"Lithuania",   ROU:"Romania",      CZE:"Czech Republic",
+  NLD:"Netherlands",    BEL:"Belgium",     GRC:"Greece",       ITA:"Italy",
+  JEY:"Jersey",         RUS:"Russia",      USA:"United States",MDV:"Maldives",
+  CHE:"Switzerland",    LVA:"Latvia",      IRL:"Ireland",      SVK:"Slovakia",
+  GIB:"Gibraltar",      AUS:"Australia",   CAN:"Canada",       SGP:"Singapore",
+  HKG:"Hong Kong",      JPN:"Japan",       ARE:"UAE",          SAU:"Saudi Arabia",
+  IND:"India",          ZAF:"South Africa",BRA:"Brazil",       MEX:"Mexico",
+  TUR:"Turkey",         UKR:"Ukraine",     SWE:"Sweden",       NOR:"Norway",
+  DNK:"Denmark",        FIN:"Finland",     AUT:"Austria",      PRT:"Portugal",
+  GGY:"Guernsey",       IMN:"Isle of Man", CYP:"Cyprus",       MLT:"Malta",
+  NZL:"New Zealand",    KOR:"South Korea", TWN:"Taiwan",       THA:"Thailand",
+};
+
+/** Convert a country code (alpha-2 or alpha-3) → flag emoji. Returns "" for unknown codes. */
+const flag = (code: string): string => {
+  if (!code || code.length < 2) return "";
+  // Normalise alpha-3 → alpha-2
+  const alpha2 = code.length === 3 ? (ALPHA3_TO_2[code.toUpperCase()] ?? "") : code.toUpperCase();
+  if (alpha2.length !== 2) return "";
+  return alpha2.split("").map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join("");
+};
+
+const name = (code: string) => COUNTRY_NAMES[code.toUpperCase()] ?? code;
 
 /* ── Custom Y-axis tick with flag ─────────────────────── */
 const FlagTick = ({ x, y, payload }: any) => (

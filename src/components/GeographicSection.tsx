@@ -30,8 +30,8 @@ const Tip = ({ active, payload }: any) => {
 };
 
 export default function GeographicSection({ data }: Props) {
-  const top10  = data.slice(0, 10);
-  const byRate = [...data].sort((a, b) => b.rate - a.rate).slice(0, 10);
+  const top8   = data.slice(0, 8);
+  const byRate = [...data].sort((a, b) => b.rate - a.rate).slice(0, 8);
 
   return (
     <SectionCard
@@ -46,8 +46,8 @@ export default function GeographicSection({ data }: Props) {
           <p style={{ fontSize: 11, fontWeight: 700, color: "#9b1c1c", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
             Highest Volume
           </p>
-          <p style={{ fontSize: 36, fontWeight: 800, color: "#dc2626", letterSpacing: "-0.03em", lineHeight: 1 }}>{top10[0]?.country}</p>
-          <p style={{ fontSize: 13, color: "#6b6b80", marginTop: 6 }}>{fmt(top10[0]?.fraud)} fraud transactions · {top10[0]?.rate}% rate</p>
+          <p style={{ fontSize: 36, fontWeight: 800, color: "#dc2626", letterSpacing: "-0.03em", lineHeight: 1 }}>{top8[0]?.country}</p>
+          <p style={{ fontSize: 13, color: "#6b6b80", marginTop: 6 }}>{fmt(top8[0]?.fraud)} fraud transactions · {top8[0]?.rate}% rate</p>
         </div>
         <div style={{ background: "#fffbeb", borderRadius: 14, padding: "20px 22px" }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
@@ -62,7 +62,7 @@ export default function GeographicSection({ data }: Props) {
       <div style={{ background: "#fff1f1", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 20px", display: "flex", gap: 12 }}>
         <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>🌍</span>
         <p style={{ fontSize: 13, color: "#7f1d1d", lineHeight: 1.6 }}>
-          <strong>{top10[0]?.country}</strong> is the largest fraud source <em>by volume</em> ({fmt(top10[0]?.fraud)} cases), driven by its dominant user base.
+          <strong>{top8[0]?.country}</strong> is the largest fraud source <em>by volume</em> ({fmt(top8[0]?.fraud)} cases), driven by its dominant user base.
           But <strong>{byRate[0]?.country}</strong> is the most dangerous <em>by rate</em> ({byRate[0]?.rate}%) — nearly 1 in {Math.round(100 / (byRate[0]?.rate || 1))} transactions is fraudulent.
           Both dimensions require independent monitoring for a global risk strategy.
         </p>
@@ -75,12 +75,12 @@ export default function GeographicSection({ data }: Props) {
             By Fraud Volume
           </p>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={top10} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+            <BarChart data={top8} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#9898ac", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={28} />
               <Tooltip content={<Tip />} />
               <Bar dataKey="fraud" radius={[0, 6, 6, 0]}>
-                {top10.map((e, i) => (
+                {top8.map((e, i) => (
                   <Cell key={e.country} fill={i === 0 ? "#dc2626" : `rgba(220,38,38,${0.75 - i * 0.06})`} />
                 ))}
               </Bar>
@@ -89,7 +89,7 @@ export default function GeographicSection({ data }: Props) {
         </div>
         <div>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            By Fraud Rate (%)
+            By Fraud Rate (%) · ≥50 txns
           </p>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={byRate} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
@@ -109,7 +109,7 @@ export default function GeographicSection({ data }: Props) {
       {/* Table */}
       <div>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Country Breakdown
+          Country Breakdown — Top 8 by Fraud Volume
         </p>
         <div style={{ border: "1px solid #e8e8ed", borderRadius: 12, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -123,9 +123,14 @@ export default function GeographicSection({ data }: Props) {
               </tr>
             </thead>
             <tbody>
-              {top10.map((row, i) => (
+              {top8.map((row, i) => (
                 <tr key={row.country} style={{ borderTop: "1px solid #f0f0f5", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                  <td style={{ padding: "11px 16px", fontWeight: 700 }}>{row.country}</td>
+                  <td style={{ padding: "11px 16px", fontWeight: 700 }}>
+                    {row.country}
+                    {row.country === "Unknown / Null" && (
+                      <sup style={{ fontSize: 10, color: "#9898ac", marginLeft: 3 }}>†</sup>
+                    )}
+                  </td>
                   <td style={{ padding: "11px 16px", color: "#6b6b80" }}>{fmt(row.total)}</td>
                   <td style={{ padding: "11px 16px", fontWeight: 600, color: "#dc2626" }}>{fmt(row.fraud)}</td>
                   <td style={{ padding: "11px 16px" }}>
@@ -143,6 +148,11 @@ export default function GeographicSection({ data }: Props) {
             </tbody>
           </table>
         </div>
+        {top8.some((r) => r.country === "Unknown / Null") && (
+          <p style={{ fontSize: 11, color: "#9898ac", marginTop: 8, paddingLeft: 4, lineHeight: 1.5 }}>
+            <sup>†</sup> <em>Unknown / Null</em> represents transactions where the <code>MERCHANT_COUNTRY</code> field was not recorded in the source data.
+          </p>
+        )}
       </div>
     </SectionCard>
   );

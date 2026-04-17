@@ -35,19 +35,50 @@ html, body {
 
   html, body {
     width: 210mm;
-    height: 297mm;
-    font-size: 11pt;
     background: #ffffff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     color-adjust: exact;
   }
 
-  .report-no-print  { display: none !important; }
-  .report-page      { page-break-after: always; break-after: page; }
-  .report-page:last-child { page-break-after: avoid; break-after: avoid; }
+  /* Outer wrapper: strip the gray background */
+  body > div,
+  #__next,
+  [data-nextjs-scroll-focus-boundary] {
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
 
-  /* Ensure backgrounds and borders print */
+  .report-no-print  { display: none !important; }
+
+  /* Strip all screen-only spacing from the pages wrapper */
+  .report-pages-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+    background: transparent !important;
+  }
+
+  .report-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    overflow: hidden !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    margin: 0 !important;
+    padding: 0 !important;   /* let inner divs control their own padding */
+    position: relative !important;
+    box-shadow: none !important;
+    display: block !important;
+  }
+
+  .report-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Backgrounds, borders, colours all print */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

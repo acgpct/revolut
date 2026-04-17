@@ -47,6 +47,7 @@ export default function FraudstersSection({ fraudsters, totalFraudsters }: Props
           Our composite score rewards <em>frequency</em> (persistent actors are harder to catch),{" "}
           <em>method diversity</em> (using multiple channels evades rule-based detection), and{" "}
           <em>geographic spread</em> (multi-country activity signals organised rings).
+          {" "}<strong>Methodology note:</strong> <em>Countries Hit</em> counts transactions with no recorded merchant country as a distinct geographic exposure — one above what a <code>nunique()</code> call would return — because unattributed activity represents a genuine data-quality risk signal.
         </p>
       </div>
 
