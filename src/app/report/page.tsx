@@ -161,7 +161,7 @@ function TitlePage() {
         <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 20, height: 1, background: "rgba(255,255,255,0.15)" }} />
           <a
-            href="https://revolut-git-main-agnes-projects-8c138476.vercel.app/"
+            href="https://revolut-three.vercel.app/"
             style={{
               fontSize: 7.5,
               fontWeight: 700,
@@ -524,7 +524,7 @@ function GeographicRisk({ d }: { d: Analytics }) {
       )}
 
       <Insight>
-        <strong style={{ color: INK }}>{hv.country} vs {byRate[1]?.country ?? byRate[0]?.country} requires a dual-axis model.</strong>{" "}
+        <strong style={{ color: INK }}>{hv.country} vs {byRate[0]?.country} requires a dual-axis model.</strong>{" "}
         {hv.country} accounts for {Math.round((hv.fraud / geo.reduce((s,g)=>s+g.fraud,0))*100)}% of fraud by volume ({fmtM(hv.fraud_amount)} lost) — operational priority.{" "}
         {byRate[0]?.country}&apos;s {byRate[0]?.rate}% rate signals a structurally different fraud vector requiring separate controls.
       </Insight>
