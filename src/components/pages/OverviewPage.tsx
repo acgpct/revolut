@@ -127,6 +127,28 @@ export default function OverviewPage({ data }: { data: Analytics }) {
           </div>
         </div>
       </Panel>
+
+      {/* Strategic synthesis */}
+      <div style={{
+        marginTop: 24,
+        padding: "24px 28px",
+        borderRadius: 14,
+        border: "1px solid #e5e5e5",
+        borderLeft: "3px solid #0f0f0f",
+        background: "#fafafa",
+      }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#a3a3a3", marginBottom: 10 }}>
+          Strategic Synthesis
+        </p>
+        <p style={{ fontSize: 14, color: "#171717", lineHeight: 1.75, maxWidth: 820 }}>
+          Taken together, these findings reveal a single systemic gap: Revolut&apos;s defences are calibrated to stop fraud{" "}
+          <em>at the gate</em> (KYC) rather than <em>in motion</em>. The conversion inflation, the geographic blind spot,
+          the KYC bypass pattern, and the persistence of top actors all point to the same root cause —{" "}
+          <strong>post-onboarding behavioural monitoring is absent.</strong>{" "}
+          Fixing any one of these in isolation treats a symptom. Addressing the root cause — real-time transaction-level
+          anomaly detection layered on top of identity verification — resolves all four simultaneously.
+        </p>
+      </div>
     </div>
   );
 }

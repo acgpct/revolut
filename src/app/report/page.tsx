@@ -441,7 +441,7 @@ function GeographicRisk({ d }: { d: Analytics }) {
       </div>
 
       {/* Country table */}
-      <table style={{ width: "100%", fontSize: 8.5, borderCollapse: "collapse", marginBottom: 12 }}>
+      <table style={{ width: "100%", fontSize: 8.5, borderCollapse: "collapse", marginBottom: 4 }}>
         <thead>
           <tr style={{ borderBottom: `1.5px solid ${INK}` }}>
             {["Country","Total Txns","Fraud Txns","Rate","Fraud Loss"].map(h => (
@@ -450,9 +450,12 @@ function GeographicRisk({ d }: { d: Analytics }) {
           </tr>
         </thead>
         <tbody>
-          {top8.map((row, i) => (
+          {top8.map((row) => (
             <tr key={row.country} style={{ borderBottom: `1px solid ${RULE}` }}>
-              <td style={{ padding: "5px 8px", fontWeight: 700, color: INK }}>{row.country}</td>
+              <td style={{ padding: "5px 8px", fontWeight: 700, color: INK }}>
+                {row.country}
+                {row.country === "Unknown / Null" && <sup style={{ fontSize: 6, color: SUBTLE, marginLeft: 2 }}>†</sup>}
+              </td>
               <td style={{ padding: "5px 8px", color: MUTED }}>{fmt(row.total)}</td>
               <td style={{ padding: "5px 8px", color: MUTED }}>{fmt(row.fraud)}</td>
               <td style={{ padding: "5px 8px" }}>
@@ -465,6 +468,11 @@ function GeographicRisk({ d }: { d: Analytics }) {
           ))}
         </tbody>
       </table>
+      {top8.some(r => r.country === "Unknown / Null") && (
+        <p style={{ fontSize: 7, color: SUBTLE, marginBottom: 8, paddingLeft: 2 }}>
+          <sup>†</sup> Transactions where <code>MERCHANT_COUNTRY</code> was not recorded in the source data.
+        </p>
+      )}
 
       <Insight>
         <strong style={{ color: INK }}>GB vs DE requires a dual-axis model.</strong> GB accounts for 90% of fraud by volume (£382M lost) — operational priority. DE's 5.64% rate signals a structurally different fraud vector requiring separate controls.
