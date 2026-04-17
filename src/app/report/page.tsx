@@ -157,24 +157,25 @@ function TitlePage() {
           Conversion rate methodology · Geographic risk ·<br />KYC pattern anomalies · Priority fraudster targeting
         </p>
 
-        {/* Dashboard link */}
+        {/* Dashboard CTA — visible in browser and preserved as a clickable link in print/PDF */}
         <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 20, height: 1, background: "rgba(255,255,255,0.12)" }} />
+          <div style={{ width: 20, height: 1, background: "rgba(255,255,255,0.15)" }} />
           <a
             href="https://revolut-git-main-agnes-projects-8c138476.vercel.app/"
             style={{
-              fontSize: 8.5,
-              fontWeight: 600,
-              letterSpacing: "0.04em",
+              fontSize: 7.5,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
               color: "rgba(255,255,255,0.55)",
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 10,
             }}
           >
             Go to interactive dashboard
-            <span style={{ opacity: 0.4, fontSize: 10 }}>›</span>
+            <span style={{ opacity: 0.5, letterSpacing: 0 }}>›</span>
           </a>
         </div>
       </div>
