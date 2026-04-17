@@ -156,6 +156,27 @@ function TitlePage() {
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.36)", lineHeight: 1.65, maxWidth: 420 }}>
           Conversion rate methodology · Geographic risk ·<br />KYC pattern anomalies · Priority fraudster targeting
         </p>
+
+        {/* Dashboard link */}
+        <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 20, height: 1, background: "rgba(255,255,255,0.12)" }} />
+          <a
+            href="https://revolut-git-main-agnes-projects-8c138476.vercel.app/"
+            style={{
+              fontSize: 8.5,
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              color: "rgba(255,255,255,0.55)",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            Go to interactive dashboard
+            <span style={{ opacity: 0.4, fontSize: 10 }}>›</span>
+          </a>
+        </div>
       </div>
     </Page>
   );
@@ -184,7 +205,7 @@ function CoverData({ d }: { d: Analytics }) {
             { l: "Total Volume",           v: fmtM(overview.total_amount),  sub: "total transaction value" },
             { l: "Fraud Events",           v: fmt(overview.total_fraud),    sub: `${overview.fraud_rate}% fraud rate` },
             { l: "Fraud Losses",           v: fmtM(overview.fraud_amount),  sub: `${overview.fraud_amount_pct}% of total volume` },
-            { l: "Unique Fraud Actors",    v: "299",                        sub: "composite-scored actors" },
+            { l: "Unique Fraud Actors",    v: fmt(d.bonus.total_fraudsters), sub: "composite-scored actors" },
           ].map((k, i) => (
             <div key={k.l} style={{
               paddingTop: 14, paddingBottom: 14,
@@ -205,10 +226,10 @@ function CoverData({ d }: { d: Analytics }) {
         </p>
         {[
           { n: "1", t: "Executive Summary",                s: "Key findings at a glance" },
-          { n: "2", t: "Brief 1 — App Conversion Rate",    s: "Methodology gap: 79.72% vs 65.62%" },
+          { n: "2", t: "Brief 1 — App Conversion Rate",    s: `Methodology gap: ${d.brief1.marketing_rate}% vs ${d.brief1.revolut_rate}%` },
           { n: "3", t: "Brief 2A — Geographic Risk",       s: "Volume vs rate: two independent threats" },
           { n: "4", t: "Brief 2B — KYC-Passed Fraudsters", s: "Behavioural anomalies identity checks miss" },
-          { n: "5", t: "Bonus — Top Fraudster Ranking",    s: "Composite scoring across 299 actors" },
+          { n: "5", t: "Bonus — Top Fraudster Ranking",    s: `Composite scoring across ${fmt(d.bonus.total_fraudsters)} actors` },
           { n: "6", t: "Recommendations",                  s: "Four actions linked directly to findings" },
         ].map((t) => (
           <div key={t.n} style={{ display: "flex", gap: 14, padding: "9px 0", borderBottom: `1px solid ${RULE}`, alignItems: "baseline" }}>
@@ -240,11 +261,30 @@ function ExecSummary({ d }: { d: Analytics }) {
     Fraud: t.fraud,
   }));
 
+  // Derive dynamic geo stats for findings
+  const geoByVol  = d.brief2a.geo_risk;
+  const geoByRate = [...d.brief2a.geo_risk].sort((a,b) => b.rate - a.rate);
+  const hvCountry = geoByVol[0]?.country ?? "—";
+  const hvFraud   = geoByVol[0]?.fraud   ?? 0;
+  const hvAmt     = geoByVol[0]?.fraud_amount ?? 0;
+  const hrCountry = geoByRate[0]?.country ?? "—";
+  const hrRate    = geoByRate[0]?.rate    ?? 0;
+  const hr1in     = Math.round(100 / (hrRate || 1));
+
+  // ATM / bank-transfer pp delta
+  const atmDiff  = (d.brief2b.fraud_type_pct["ATM"]          ?? 0) - (d.brief2b.legit_type_pct["ATM"]          ?? 0);
+  const bankDiff = (d.brief2b.fraud_type_pct["BANK_TRANSFER"] ?? 0) - (d.brief2b.legit_type_pct["BANK_TRANSFER"] ?? 0);
+
+  // #1 actor dynamic
+  const top1 = d.bonus.top_fraudsters[0];
+  const top2 = d.bonus.top_fraudsters[1];
+  const scoreRatio = top2 ? (top1.score / top2.score).toFixed(1) : "—";
+
   const findings = [
-    { n:"1", h:"Conversion gap of 14.1pp", b:`Marketing's ${brief1.marketing_rate}% counts fraudsters and non-card transactions. The correct rate — KYC-passed + ≥1 legitimate card payment — is ${brief1.revolut_rate}%.` },
-    { n:"2", h:"Geographic risk is two-dimensional", b:"GB leads by volume (13,088 cases, £382M). DE carries the highest fraud rate (5.64%) — 1 in 18 transactions. A single axis hides one threat." },
-    { n:"3", h:"KYC clearance ≠ legitimacy", b:`${fmt(d.brief2b.fraud_count)} fraud transactions came from KYC-passed users, over-indexing on ATM (+9.8pp) and bank transfers (+6.8pp).` },
-    { n:"4", h:"One actor: £61M across 12 countries", b:"dc283b17 executed 1,029 transactions across all 5 channels. Risk score 18,768 — 4× the second-ranked actor." },
+    { n:"1", h:`Conversion gap of ${gap}pp`, b:`Marketing's ${brief1.marketing_rate}% counts fraudsters and non-card transactions. The correct rate — KYC-passed + ≥1 legitimate card payment — is ${brief1.revolut_rate}%.` },
+    { n:"2", h:"Geographic risk is two-dimensional", b:`${hvCountry} leads by volume (${fmt(hvFraud)} cases, ${fmtM(hvAmt)}). ${hrCountry} carries the highest fraud rate (${hrRate}%) — 1 in ${hr1in} transactions. A single axis hides one threat.` },
+    { n:"3", h:"KYC clearance ≠ legitimacy", b:`${fmt(d.brief2b.fraud_count)} fraud transactions came from KYC-passed users, over-indexing on ATM (+${atmDiff.toFixed(1)}pp) and bank transfers (+${bankDiff.toFixed(1)}pp).` },
+    { n:"4", h:`One actor: ${fmtM(top1?.amount ?? 0)} across ${top1?.countries_hit ?? 0} countries`, b:`${top1?.full_id.slice(0,8) ?? "—"} executed ${fmt(top1?.txns ?? 0)} transactions across all ${top1?.types_used ?? 0} channels. Risk score ${(top1?.score ?? 0).toLocaleString()} — ${scoreRatio}× the second-ranked actor.` },
   ];
 
   return (
@@ -303,7 +343,7 @@ function ExecSummary({ d }: { d: Analytics }) {
 function ConversionRate({ d }: { d: Analytics }) {
   const { brief1, fraud_by_type } = d;
   const gap      = (brief1.marketing_rate - brief1.revolut_rate).toFixed(1);
-  const excluded = fmt(brief1.topup_users - brief1.revolut_converted_users);
+  const excluded = fmt(brief1.unique_users - brief1.revolut_converted_users);
   const total    = brief1.unique_users;
 
   const funnel = [
@@ -314,6 +354,7 @@ function ConversionRate({ d }: { d: Analytics }) {
     { l: "Revolut Converted (true)", v: brief1.revolut_converted_users, p: Math.round(brief1.revolut_converted_users/total*100) },
   ];
 
+  const btType   = fraud_by_type.find(t => t.type === "BANK_TRANSFER");
   const rateData = [...fraud_by_type].sort((a,b)=>b.rate-a.rate).map(t => ({
     name: t.type.replace("CARD_PAYMENT","Card Pay.").replace("BANK_TRANSFER","Transfer").replace(/_/g," "),
     rate: t.rate,
@@ -380,7 +421,7 @@ function ConversionRate({ d }: { d: Analytics }) {
             </BarChart>
           </ResponsiveContainer>
           <p style={{ fontSize: 8.5, fontWeight: 700, color: RED, borderTop: `1px solid #fdd`, paddingTop: 6, marginTop: 4 }}>
-            Bank Transfer: 7.76% — 5× the platform average ({d.overview.fraud_rate}%)
+            Bank Transfer: {btType?.rate}% — {btType ? (btType.rate / (d.overview.fraud_rate || 1)).toFixed(1) : "—"}× the platform average ({d.overview.fraud_rate}%)
           </p>
         </div>
       </div>
@@ -392,11 +433,18 @@ function ConversionRate({ d }: { d: Analytics }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAGE 4 — GEOGRAPHIC RISK
 // ═══════════════════════════════════════════════════════════════════════════════
+// Compact label for chart axes — keeps all ticks the same width
+const shortLabel = (c: string) => c === "Unknown / Null" ? "N/A" : c;
+
 function GeographicRisk({ d }: { d: Analytics }) {
   const geo    = d.brief2a.geo_risk;
   const top8   = geo.slice(0, 8);
   const byRate = [...geo].sort((a,b)=>b.rate-a.rate).slice(0, 8);
   const hv = geo[0], hr = byRate[0];
+
+  // Map to short labels for chart axes only
+  const top8Chart   = top8.map(r   => ({ ...r, country: shortLabel(r.country) }));
+  const byRateChart = byRate.map(r => ({ ...r, country: shortLabel(r.country) }));
 
   return (
     <ContentPage>
@@ -475,7 +523,9 @@ function GeographicRisk({ d }: { d: Analytics }) {
       )}
 
       <Insight>
-        <strong style={{ color: INK }}>GB vs DE requires a dual-axis model.</strong> GB accounts for 90% of fraud by volume (£382M lost) — operational priority. DE's 5.64% rate signals a structurally different fraud vector requiring separate controls.
+        <strong style={{ color: INK }}>{hv.country} vs {byRate[1]?.country ?? byRate[0]?.country} requires a dual-axis model.</strong>{" "}
+        {hv.country} accounts for {Math.round((hv.fraud / geo.reduce((s,g)=>s+g.fraud,0))*100)}% of fraud by volume ({fmtM(hv.fraud_amount)} lost) — operational priority.{" "}
+        {byRate[0]?.country}&apos;s {byRate[0]?.rate}% rate signals a structurally different fraud vector requiring separate controls.
       </Insight>
       <Footer n={5} total={TOTAL} />
     </ContentPage>
@@ -497,6 +547,7 @@ function KYCPatterns({ d }: { d: Analytics }) {
     Legitimate: brief2b.legit_type_pct[t] || 0,
   }));
 
+  const btRate  = fraud_by_type.find(t => t.type === "BANK_TRANSFER");
   const rateData = [...fraud_by_type].sort((a,b)=>b.rate-a.rate).map(t => ({
     name: t.type.replace("CARD_PAYMENT","Card Pay.").replace("BANK_TRANSFER","Transfer").replace(/_/g," "),
     rate: t.rate,
@@ -555,7 +606,7 @@ function KYCPatterns({ d }: { d: Analytics }) {
             </BarChart>
           </ResponsiveContainer>
           <p style={{ fontSize: 8.5, fontWeight: 700, color: RED, borderTop: `1px solid #fdd`, paddingTop: 5 }}>
-            Bank Transfer: 7.76% — highest of any channel
+            Bank Transfer: {btRate?.rate}% — highest of any channel
           </p>
         </div>
       </div>
@@ -593,7 +644,18 @@ function KYCPatterns({ d }: { d: Analytics }) {
       </table>
 
       <Insight>
-        <strong style={{ color: INK }}>Fraudsters leave a detectable footprint.</strong> They over-index on ATM (+9.8pp) and bank transfers (+6.8pp) while under-indexing on card payments (−18.2pp). Avg birth year: Fraud {brief2b.fraud_avg_birth} · Legit {brief2b.legit_avg_birth}. Layering behavioural rules on KYC would surface these actors before fraud accumulates.
+        {(() => {
+          const atmD  = ((brief2b.fraud_type_pct["ATM"]          ?? 0) - (brief2b.legit_type_pct["ATM"]          ?? 0)).toFixed(1);
+          const bankD = ((brief2b.fraud_type_pct["BANK_TRANSFER"] ?? 0) - (brief2b.legit_type_pct["BANK_TRANSFER"] ?? 0)).toFixed(1);
+          const cardD = ((brief2b.fraud_type_pct["CARD_PAYMENT"]  ?? 0) - (brief2b.legit_type_pct["CARD_PAYMENT"]  ?? 0)).toFixed(1);
+          return (
+            <>
+              <strong style={{ color: INK }}>Fraudsters leave a detectable footprint.</strong>{" "}
+              They over-index on ATM (+{atmD}pp) and bank transfers (+{bankD}pp) while under-indexing on card payments ({cardD}pp).{" "}
+              Avg birth year: Fraud {brief2b.fraud_avg_birth} · Legit {brief2b.legit_avg_birth}. Layering behavioural rules on KYC would surface these actors before fraud accumulates.
+            </>
+          );
+        })()}
       </Insight>
       <Footer n={6} total={TOTAL} />
     </ContentPage>
@@ -706,7 +768,8 @@ function TopFraudsters({ d }: { d: Analytics }) {
 
             <div style={{ marginTop: 12 }}>
               <Insight>
-                <strong style={{ color: INK }}>dc283b17</strong> — 1,029 txns, 5 channels, 12 countries, KYC Pending. No legitimate user matches this profile.
+                <strong style={{ color: INK }}>{top1.full_id.slice(0,8)}</strong>{" "}
+                — {fmt(top1.txns)} txns, {top1.types_used} channels, {top1.countries_hit} countries, KYC {top1.kyc.charAt(0) + top1.kyc.slice(1).toLowerCase()}. No legitimate user matches this profile.
               </Insight>
             </div>
           </div>
@@ -724,30 +787,50 @@ function Recommendations({ d }: { d: Analytics }) {
   const { brief1, overview, brief2b, bonus } = d;
   const gap = (brief1.marketing_rate - brief1.revolut_rate).toFixed(1);
 
+  // Geo-derived values
+  const geoByVol  = d.brief2a.geo_risk;
+  const geoByRate = [...d.brief2a.geo_risk].sort((a,b) => b.rate - a.rate);
+  const hvC = geoByVol[0];   // highest volume country
+  const hrC = geoByRate[0];  // highest rate country (≥50 txns)
+  // Find the second-highest-volume country for the dual-axis comparison
+  const secVolC = geoByVol[1];
+  const rateRatio = hvC && secVolC ? (hrC.rate / (hvC.rate || 1)).toFixed(1) : "—";
+
+  // ATM / bank-transfer / card pp deltas
+  const atmD  = ((brief2b.fraud_type_pct["ATM"]          ?? 0) - (brief2b.legit_type_pct["ATM"]          ?? 0)).toFixed(1);
+  const bankD = ((brief2b.fraud_type_pct["BANK_TRANSFER"] ?? 0) - (brief2b.legit_type_pct["BANK_TRANSFER"] ?? 0)).toFixed(1);
+  const cardD = ((brief2b.fraud_type_pct["CARD_PAYMENT"]  ?? 0) - (brief2b.legit_type_pct["CARD_PAYMENT"]  ?? 0)).toFixed(1);
+  const legitCard = brief2b.legit_type_pct["CARD_PAYMENT"] ?? 0;
+
+  // Top-actor dynamic values
+  const top1 = bonus.top_fraudsters[0];
+  const top2 = bonus.top_fraudsters[1];
+  const scoreRatio = top2 ? (top1.score / top2.score).toFixed(1) : "—";
+
   const recs = [
     {
       tag:"REC 1 · Brief 1",
-      title:"Retire the 79.72% conversion metric",
-      body:`Replace with ${brief1.revolut_rate}% — KYC-passed users with ≥1 legitimate card payment. This is the only signal of a revenue-positive primary account. The current metric overstates conversion by ${gap}pp by counting ${fmt(brief1.topup_users - brief1.revolut_converted_users)} users generating zero interchange revenue.`,
-      ev:`${fmt(brief1.topup_users - brief1.revolut_converted_users)} users excluded under the correct definition.`,
+      title:`Retire the ${brief1.marketing_rate}% conversion metric`,
+      body:`Replace with ${brief1.revolut_rate}% — KYC-passed users with ≥1 legitimate card payment. This is the only signal of a revenue-positive primary account. The current metric overstates conversion by ${gap}pp by counting ${fmt(brief1.unique_users - brief1.revolut_converted_users)} users generating zero interchange revenue.`,
+      ev:`${fmt(brief1.unique_users - brief1.revolut_converted_users)} users excluded under the correct definition.`,
     },
     {
       tag:"REC 2 · Brief 2A",
       title:"Dual-axis geographic risk model",
-      body:`Track GB (volume: 13,088 cases, £382M) and DE (rate: 5.64%) on separate KPI dashboards with independent alert thresholds. A single volume-based view hides DE's rate — 1.7× higher than GB — which likely represents a different fraud vector.`,
-      ev:`DE fraud rate 5.64% vs GB 3.4% despite a fraction of the transaction volume.`,
+      body:`Track ${hvC?.country} (volume: ${fmt(hvC?.fraud)} cases, ${fmtM(hvC?.fraud_amount)}) and ${hrC?.country} (rate: ${hrC?.rate}%) on separate KPI dashboards with independent alert thresholds. A single volume-based view hides ${hrC?.country}'s rate — ${rateRatio}× higher than ${hvC?.country} — which likely represents a different fraud vector.`,
+      ev:`${hrC?.country} fraud rate ${hrC?.rate}% vs ${hvC?.country} ${hvC?.rate}% despite a fraction of the transaction volume.`,
     },
     {
       tag:"REC 3 · Brief 2B",
       title:"Layer behavioural rules on top of KYC",
-      body:`Flag users where ATM share >25% (+9.8pp above baseline), bank transfer share >15% (+6.8pp), or card payment share <50% (vs 63.8% for legitimate users). Two or more signals within 30 days of registration should trigger enhanced due diligence.`,
+      body:`Flag users where ATM share >25% (+${atmD}pp above baseline), bank transfer share >15% (+${bankD}pp), or card payment share <45% (vs ${legitCard}% for legitimate users — matching the 45.61% fraud profile). Two or more signals within 30 days of registration should trigger enhanced due diligence.`,
       ev:`${fmt(brief2b.fraud_count)} fraud txns from KYC-passed users bypassed identity controls entirely.`,
     },
     {
       tag:"REC 4 · Bonus",
       title:"Immediate action + nightly composite scoring",
-      body:`Suspend dc283b17 (score 18,768 — 4.6× second-ranked) immediately. Run composite scoring nightly across all ${fmt(bonus.total_fraudsters)} actors to surface emerging high-risk profiles before losses compound further.`,
-      ev:`dc283b17: 1,029 txns across 12 countries; no legitimate profile matches this pattern.`,
+      body:`Suspend ${top1?.full_id.slice(0,8)} (score ${top1?.score.toLocaleString()} — ${scoreRatio}× second-ranked) immediately. Run composite scoring nightly across all ${fmt(bonus.total_fraudsters)} actors to surface emerging high-risk profiles before losses compound further.`,
+      ev:`${top1?.full_id.slice(0,8)}: ${fmt(top1?.txns)} txns across ${top1?.countries_hit} countries; no legitimate profile matches this pattern.`,
     },
   ];
 

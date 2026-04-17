@@ -61,7 +61,7 @@
         "total_amount": 1739993427
       },
       {
-        "country": "",
+        "country": "Unknown / Null",
         "total": 205578,
         "fraud": 5464,
         "rate": 2.66,
@@ -211,6 +211,798 @@
         "rate": 0.33,
         "fraud_amount": 18950,
         "total_amount": 74524740
+      },
+      {
+        "country": "BRA",
+        "total": 2200,
+        "fraud": 13,
+        "rate": 0.59,
+        "fraud_amount": 53797,
+        "total_amount": 6553934
+      },
+      {
+        "country": "VNM",
+        "total": 2065,
+        "fraud": 10,
+        "rate": 0.48,
+        "fraud_amount": 59301,
+        "total_amount": 14351759
+      },
+      {
+        "country": "CZE",
+        "total": 2418,
+        "fraud": 9,
+        "rate": 0.37,
+        "fraud_amount": 24025,
+        "total_amount": 52561400
+      },
+      {
+        "country": "MDA",
+        "total": 74,
+        "fraud": 9,
+        "rate": 12.16,
+        "fraud_amount": 34998,
+        "total_amount": 395067
+      },
+      {
+        "country": "AUS",
+        "total": 10088,
+        "fraud": 7,
+        "rate": 0.07,
+        "fraud_amount": 8417,
+        "total_amount": 201705516
+      },
+      {
+        "country": "ITA",
+        "total": 9704,
+        "fraud": 6,
+        "rate": 0.06,
+        "fraud_amount": 75151,
+        "total_amount": 70602699
+      },
+      {
+        "country": "CAN",
+        "total": 5730,
+        "fraud": 6,
+        "rate": 0.1,
+        "fraud_amount": 8893,
+        "total_amount": 275964565
+      },
+      {
+        "country": "HKG",
+        "total": 2229,
+        "fraud": 5,
+        "rate": 0.22,
+        "fraud_amount": 3831,
+        "total_amount": 84956354
+      },
+      {
+        "country": "MYS",
+        "total": 1277,
+        "fraud": 4,
+        "rate": 0.31,
+        "fraud_amount": 43942,
+        "total_amount": 6919045
+      },
+      {
+        "country": "HUN",
+        "total": 4210,
+        "fraud": 3,
+        "rate": 0.07,
+        "fraud_amount": 25713,
+        "total_amount": 908712004
+      },
+      {
+        "country": "BEL",
+        "total": 2274,
+        "fraud": 3,
+        "rate": 0.13,
+        "fraud_amount": 108089,
+        "total_amount": 22151442
+      },
+      {
+        "country": "CHN",
+        "total": 1310,
+        "fraud": 2,
+        "rate": 0.15,
+        "fraud_amount": 19766,
+        "total_amount": 10895126
+      },
+      {
+        "country": "IND",
+        "total": 1367,
+        "fraud": 2,
+        "rate": 0.15,
+        "fraud_amount": 51511,
+        "total_amount": 314189209
+      },
+      {
+        "country": "DNK",
+        "total": 2806,
+        "fraud": 2,
+        "rate": 0.07,
+        "fraud_amount": 27457,
+        "total_amount": 24081010
+      },
+      {
+        "country": "LVA",
+        "total": 3945,
+        "fraud": 1,
+        "rate": 0.03,
+        "fraud_amount": 3488,
+        "total_amount": 61514070
+      },
+      {
+        "country": "196",
+        "total": 55,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 338393
+      },
+      {
+        "country": "CA",
+        "total": 127,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 422423
+      },
+      {
+        "country": "UKR",
+        "total": 1563,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 4788064
+      },
+      {
+        "country": "NZL",
+        "total": 5254,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 17260934
+      },
+      {
+        "country": "FL",
+        "total": 136,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 827587
+      },
+      {
+        "country": "PRT",
+        "total": 5002,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 66531588
+      },
+      {
+        "country": "PER",
+        "total": 847,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 4670993
+      },
+      {
+        "country": "NY",
+        "total": 50,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 514412
+      },
+      {
+        "country": "KHM",
+        "total": 458,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 6148589
+      },
+      {
+        "country": "SGP",
+        "total": 2075,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 10624833
+      },
+      {
+        "country": "EGY",
+        "total": 172,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1353018
+      },
+      {
+        "country": "TUR",
+        "total": 1695,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 14724578
+      },
+      {
+        "country": "EST",
+        "total": 3699,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 153820686
+      },
+      {
+        "country": "ARE",
+        "total": 2282,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 34570468
+      },
+      {
+        "country": "PHL",
+        "total": 662,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 15609720
+      },
+      {
+        "country": "ISR",
+        "total": 1963,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 19658391
+      },
+      {
+        "country": "DOM",
+        "total": 123,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 603791
+      },
+      {
+        "country": "RUS",
+        "total": 2615,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 8825305
+      },
+      {
+        "country": "HRV",
+        "total": 2334,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 18602738
+      },
+      {
+        "country": "CRI",
+        "total": 312,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2180452
+      },
+      {
+        "country": "MCO",
+        "total": 58,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 321766
+      },
+      {
+        "country": "JPN",
+        "total": 2296,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 24114754
+      },
+      {
+        "country": "IDN",
+        "total": 2553,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 17001103
+      },
+      {
+        "country": "TWN",
+        "total": 232,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1158025
+      },
+      {
+        "country": "GRC",
+        "total": 4536,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 116580657
+      },
+      {
+        "country": "FJI",
+        "total": 64,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 280238
+      },
+      {
+        "country": "SVK",
+        "total": 650,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 3141443
+      },
+      {
+        "country": "CHL",
+        "total": 324,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2766790
+      },
+      {
+        "country": "MUS",
+        "total": 100,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 939798
+      },
+      {
+        "country": "ZAF",
+        "total": 3494,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 61381667
+      },
+      {
+        "country": "BRB",
+        "total": 120,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1377012
+      },
+      {
+        "country": "COL",
+        "total": 742,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 4564653
+      },
+      {
+        "country": "QAT",
+        "total": 272,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2013173
+      },
+      {
+        "country": "LKA",
+        "total": 441,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 4315039
+      },
+      {
+        "country": "ARG",
+        "total": 761,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 3910139
+      },
+      {
+        "country": "LAO",
+        "total": 204,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1913057
+      },
+      {
+        "country": "FIN",
+        "total": 1109,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1852054
+      },
+      {
+        "country": "AND",
+        "total": 192,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1148858
+      },
+      {
+        "country": "ISL",
+        "total": 1038,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 9359533
+      },
+      {
+        "country": "CUB",
+        "total": 159,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1866316
+      },
+      {
+        "country": "MAR",
+        "total": 673,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 15784591
+      },
+      {
+        "country": "BLR",
+        "total": 407,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1090980
+      },
+      {
+        "country": "SVN",
+        "total": 1458,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 5426653
+      },
+      {
+        "country": "KOR",
+        "total": 1017,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 3723698
+      },
+      {
+        "country": "LCA",
+        "total": 80,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 415083
+      },
+      {
+        "country": "MEX",
+        "total": 1457,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 8180161
+      },
+      {
+        "country": "BOL",
+        "total": 382,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2736325
+      },
+      {
+        "country": "BGR",
+        "total": 905,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 6349401
+      },
+      {
+        "country": "JOR",
+        "total": 165,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 993343
+      },
+      {
+        "country": "ECU",
+        "total": 209,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1819665
+      },
+      {
+        "country": "BIH",
+        "total": 262,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1594223
+      },
+      {
+        "country": "MNE",
+        "total": 207,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1401521
+      },
+      {
+        "country": "SAU",
+        "total": 145,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 826818
+      },
+      {
+        "country": "MKD",
+        "total": 79,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 282449
+      },
+      {
+        "country": "MMR",
+        "total": 107,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1137375
+      },
+      {
+        "country": "PAN",
+        "total": 118,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1058606
+      },
+      {
+        "country": "GEO",
+        "total": 523,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 48698084
+      },
+      {
+        "country": "GTM",
+        "total": 120,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1292372
+      },
+      {
+        "country": "KAZ",
+        "total": 53,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 251553
+      },
+      {
+        "country": "KEN",
+        "total": 122,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 661896
+      },
+      {
+        "country": "BLZ",
+        "total": 55,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 408420
+      },
+      {
+        "country": "SRB",
+        "total": 229,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1215417
+      },
+      {
+        "country": "ALB",
+        "total": 78,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 993610
+      },
+      {
+        "country": "NPL",
+        "total": 213,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2043358
+      },
+      {
+        "country": "ARM",
+        "total": 55,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 496214
+      },
+      {
+        "country": "000",
+        "total": 79,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 523190
+      },
+      {
+        "country": "BP0",
+        "total": 74,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 78563
+      },
+      {
+        "country": "BP1",
+        "total": 203,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 103105
+      },
+      {
+        "country": "QLD",
+        "total": 94,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 395553
+      },
+      {
+        "country": "VIC",
+        "total": 110,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 411917
+      },
+      {
+        "country": "NSW",
+        "total": 218,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 558633
+      },
+      {
+        "country": "AZE",
+        "total": 273,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 806333
+      },
+      {
+        "country": "OMN",
+        "total": 112,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1199617
+      },
+      {
+        "country": "KGZ",
+        "total": 80,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 678847
+      },
+      {
+        "country": "TZA",
+        "total": 68,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 816514
+      },
+      {
+        "country": "SYC",
+        "total": 66,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 744395050
+      },
+      {
+        "country": "JEY",
+        "total": 110,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 248498
+      },
+      {
+        "country": "LBN",
+        "total": 92,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 603631
+      },
+      {
+        "country": "BHS",
+        "total": 87,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 986332
+      },
+      {
+        "country": "ETH",
+        "total": 125,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 906368
+      },
+      {
+        "country": "NAM",
+        "total": 57,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 394253
+      },
+      {
+        "country": "GLP",
+        "total": 56,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 290172
+      },
+      {
+        "country": "TTO",
+        "total": 58,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 147911
+      },
+      {
+        "country": "ROU",
+        "total": 1312,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 16505873
       }
     ]
   },

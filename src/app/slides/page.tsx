@@ -150,7 +150,8 @@ function InsightBar({ children }: { children: React.ReactNode }) {
 
 // ── individual slides ─────────────────────────────────────────────────────────
 
-function TitleSlide() {
+function TitleSlide({ data }: { data: Analytics }) {
+  const { overview } = data;
   return (
     <Slide dark>
       {/* decorative rings */}
@@ -163,14 +164,14 @@ function TitleSlide() {
           fontSize: 64, fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.05,
           color: "#ffffff", marginTop: 32, marginBottom: 24,
         }}>
-          Fraud Analysis<br />& Findings
+          Fraud Analysis<br />&amp; Findings
         </h1>
         <p style={{ fontSize: 18, color: "rgba(255,255,255,0.45)", lineHeight: 1.55, maxWidth: 520 }}>
           Conversion rate methodology, geographic risk exposure, KYC pattern anomalies, and top-priority fraudster targeting.
         </p>
         <div style={{ marginTop: 56, height: 1, background: "rgba(255,255,255,0.1)", maxWidth: 400 }} />
         <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
-          688,651 transactions · 8,021 users · £21.8B volume
+          {fmt(overview.total_txns)} transactions · {fmt(overview.unique_users)} users · {fmtB(overview.total_amount)} volume
         </p>
       </div>
     </Slide>
@@ -393,7 +394,7 @@ function ConversionFunnelSlide({ data }: { data: Analytics }) {
           </ResponsiveContainer>
           <div style={{ marginTop: 12, padding: "12px 16px", background: "#fff8f8", border: "1px solid #fde8e8", borderRadius: 10 }}>
             <p style={{ fontSize: 12, color: "#cf1322", fontWeight: 700 }}>
-              Bank Transfer: 7.76% — 3.7× the platform average ({data.overview.fraud_rate}%)
+              {rateData[0]?.name}: {rateData[0]?.rate}% — {(rateData[0]?.rate / (data.overview.fraud_rate || 1)).toFixed(1)}× the platform average ({data.overview.fraud_rate}%)
             </p>
           </div>
         </div>
@@ -415,10 +416,14 @@ function GeoChartTip({ active, payload }: any) {
   );
 }
 
+const geoShortLabel = (c: string) => c === "Unknown / Null" ? "N/A" : c;
+
 function GeographicSlide({ data }: { data: Analytics }) {
   const geo = data.brief2a.geo_risk;
-  const top8  = geo.slice(0, 8);
-  const byRate = [...geo].sort((a, b) => b.rate - a.rate).slice(0, 8);
+  const top8    = geo.slice(0, 8);
+  const byRate  = [...geo].sort((a, b) => b.rate - a.rate).slice(0, 8);
+  const top8C   = top8.map(r   => ({ ...r, country: geoShortLabel(r.country) }));
+  const byRateC = byRate.map(r => ({ ...r, country: geoShortLabel(r.country) }));
   const highestVolume = geo[0];
   const highestRate   = byRate[0];
 
@@ -453,12 +458,12 @@ function GeographicSlide({ data }: { data: Analytics }) {
               Top 8 by Fraud Volume
             </p>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={top8} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+              <BarChart data={top8C} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
                 <XAxis type="number" tick={{ fill: "#a3a3a3", fontSize: 9, fontFamily: "inherit" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="country" tick={{ fill: "#404040", fontSize: 11, fontFamily: "inherit" }} axisLine={false} tickLine={false} width={28} />
+                <YAxis type="category" dataKey="country" tick={{ fill: "#404040", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }} axisLine={false} tickLine={false} width={36} />
                 <Tooltip content={<GeoChartTip />} cursor={{ fill: "#f5f5f5" }} />
                 <Bar dataKey="fraud" radius={[0, 3, 3, 0]}>
-                  {top8.map((e, i) => (
+                  {top8C.map((e, i) => (
                     <Cell key={e.country} fill={`rgba(15,15,15,${1 - i * 0.09})`} />
                   ))}
                 </Bar>
@@ -487,15 +492,15 @@ function GeographicSlide({ data }: { data: Analytics }) {
           </div>
           <div style={{ background: "#f9f9f9", border: "1px solid #ebebeb", borderRadius: 12, padding: "16px 16px 10px" }}>
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a3a3a3", marginBottom: 10 }}>
-              Top 8 by Fraud Rate (%)
+              Top 8 by Fraud Rate (%) · ≥50 txns
             </p>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={byRate} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+              <BarChart data={byRateC} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
                 <XAxis type="number" tick={{ fill: "#a3a3a3", fontSize: 9, fontFamily: "inherit" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <YAxis type="category" dataKey="country" tick={{ fill: "#404040", fontSize: 11, fontFamily: "inherit" }} axisLine={false} tickLine={false} width={28} />
+                <YAxis type="category" dataKey="country" tick={{ fill: "#404040", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }} axisLine={false} tickLine={false} width={36} />
                 <Tooltip content={<GeoChartTip />} cursor={{ fill: "#f5f5f5" }} />
                 <Bar dataKey="rate" radius={[0, 3, 3, 0]}>
-                  {byRate.map((e, i) => (
+                  {byRateC.map((e, i) => (
                     <Cell key={e.country} fill={`rgba(207,19,34,${1 - i * 0.09})`} />
                   ))}
                 </Bar>
@@ -695,7 +700,7 @@ function FraudstersSlide({ data }: { data: Analytics }) {
                     background: i === 0 ? "rgba(255,255,255,0.1)" : "#f0f0f0",
                     color: i === 0 ? "rgba(255,255,255,0.7)" : "#404040",
                   }}>
-                    {f.id}
+                    {f.full_id}
                   </code>
                   <span style={{
                     fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5,
@@ -740,7 +745,7 @@ function FraudstersSlide({ data }: { data: Analytics }) {
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>
                 #1 Actor · Transaction Breakdown
               </p>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginBottom: 14, fontFamily: "monospace" }}>{top1.id}</p>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginBottom: 14, fontFamily: "monospace", wordBreak: "break-all" }}>{top1.full_id}</p>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={breakdownData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} />
@@ -811,7 +816,7 @@ function RecommendationsSlide({ data }: { data: Analytics }) {
       color: "#ebebeb",
       text: "#404040",
       headline: "Dual-axis geographic monitoring",
-      body: `Track ${topVol.country} for volume escalations (${(top1?.txns||0) > 0 ? fmt(topVol.fraud) : "—"} fraud cases) and ${topRate.country} for rate spikes (${topRate.rate}%) independently. A single fraud-count dashboard masks the ${topRate.country} risk signal.`,
+      body: `Track ${topVol.country} for volume escalations (${fmt(topVol.fraud)} fraud cases) and ${topRate.country} for rate spikes (${topRate.rate}%) independently. A single fraud-count dashboard masks the ${topRate.country} risk signal.`,
     },
     {
       tag: "B2B",
@@ -825,7 +830,7 @@ function RecommendationsSlide({ data }: { data: Analytics }) {
       color: "#0f0f0f",
       text: "#ffffff",
       headline: "Immediate action on top 5 actors",
-      body: `${top1?.id || "dc283b17"} alone accounts for ${fmtB(top1?.amount||0)} across ${top1?.countries_hit||0} countries — suspend pending investigation. Composite scoring should run nightly to surface emerging actors from the ${data.bonus.total_fraudsters}-strong fraud network.`,
+      body: `${top1?.full_id?.slice(0,8) ?? "—"} alone accounts for ${fmtB(top1?.amount||0)} across ${top1?.countries_hit||0} countries — suspend pending investigation. Composite scoring should run nightly to surface emerging actors from the ${data.bonus.total_fraudsters}-strong fraud network.`,
     },
   ];
 
@@ -858,7 +863,8 @@ function RecommendationsSlide({ data }: { data: Analytics }) {
   );
 }
 
-function EndSlide() {
+function EndSlide({ data }: { data: Analytics }) {
+  const { overview } = data;
   return (
     <Slide dark>
       <div style={{ position: "absolute", left: -200, bottom: -200, width: 480, height: 480, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.06)", pointerEvents: "none" }} />
@@ -871,7 +877,8 @@ function EndSlide() {
           Thank you.
         </h1>
         <p style={{ fontSize: 16, color: "rgba(255,255,255,0.4)", lineHeight: 1.55 }}>
-          Full interactive dashboard available at the analysis tool. Data: 688,651 transactions, 8,021 users, £21.8B volume.
+          Full interactive dashboard available at the analysis tool.
+          Data: {fmt(overview.total_txns)} transactions, {fmt(overview.unique_users)} users, {fmtB(overview.total_amount)} volume.
         </p>
       </div>
     </Slide>
@@ -881,7 +888,7 @@ function EndSlide() {
 // ── slide registry ────────────────────────────────────────────────────────────
 function buildSlides(data: Analytics) {
   return [
-    { id: "title",         label: "Title",            render: () => <TitleSlide /> },
+    { id: "title",         label: "Title",            render: () => <TitleSlide data={data} /> },
     { id: "exec",          label: "Executive Summary", render: () => <ExecutiveSummary data={data} /> },
     { id: "conversion",    label: "Conversion Rate",   render: () => <ConversionSlide data={data} /> },
     { id: "funnel",        label: "Conversion Funnel", render: () => <ConversionFunnelSlide data={data} /> },
@@ -889,7 +896,7 @@ function buildSlides(data: Analytics) {
     { id: "kyc",           label: "KYC Patterns",      render: () => <KYCSlide data={data} /> },
     { id: "fraudsters",    label: "Top Fraudsters",    render: () => <FraudstersSlide data={data} /> },
     { id: "recs",          label: "Recommendations",   render: () => <RecommendationsSlide data={data} /> },
-    { id: "end",           label: "End",               render: () => <EndSlide /> },
+    { id: "end",           label: "End",               render: () => <EndSlide data={data} /> },
   ];
 }
 

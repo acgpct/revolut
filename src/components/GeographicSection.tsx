@@ -29,9 +29,14 @@ const Tip = ({ active, payload }: any) => {
   );
 };
 
+const shortLabel = (c: string) => c === "Unknown / Null" ? "N/A" : c;
+
 export default function GeographicSection({ data }: Props) {
   const top8   = data.slice(0, 8);
   const byRate = [...data].sort((a, b) => b.rate - a.rate).slice(0, 8);
+
+  const top8Chart   = top8.map(r   => ({ ...r, country: shortLabel(r.country) }));
+  const byRateChart = byRate.map(r => ({ ...r, country: shortLabel(r.country) }));
 
   return (
     <SectionCard
@@ -46,14 +51,14 @@ export default function GeographicSection({ data }: Props) {
           <p style={{ fontSize: 11, fontWeight: 700, color: "#9b1c1c", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
             Highest Volume
           </p>
-          <p style={{ fontSize: 36, fontWeight: 800, color: "#dc2626", letterSpacing: "-0.03em", lineHeight: 1 }}>{top8[0]?.country}</p>
+          <p style={{ fontSize: 36, fontWeight: 800, color: "#dc2626", letterSpacing: "-0.03em", lineHeight: 1 }}>{shortLabel(top8[0]?.country ?? "")}</p>
           <p style={{ fontSize: 13, color: "#6b6b80", marginTop: 6 }}>{fmt(top8[0]?.fraud)} fraud transactions · {top8[0]?.rate}% rate</p>
         </div>
         <div style={{ background: "#fffbeb", borderRadius: 14, padding: "20px 22px" }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
             Highest Rate (≥50 txns)
           </p>
-          <p style={{ fontSize: 36, fontWeight: 800, color: "#d97706", letterSpacing: "-0.03em", lineHeight: 1 }}>{byRate[0]?.country}</p>
+          <p style={{ fontSize: 36, fontWeight: 800, color: "#d97706", letterSpacing: "-0.03em", lineHeight: 1 }}>{shortLabel(byRate[0]?.country ?? "")}</p>
           <p style={{ fontSize: 13, color: "#6b6b80", marginTop: 6 }}>{byRate[0]?.rate}% fraud rate · {fmt(byRate[0]?.fraud)} attacks</p>
         </div>
       </div>
@@ -75,12 +80,12 @@ export default function GeographicSection({ data }: Props) {
             By Fraud Volume
           </p>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={top8} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+            <BarChart data={top8Chart} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#9898ac", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={28} />
+              <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={36} />
               <Tooltip content={<Tip />} />
               <Bar dataKey="fraud" radius={[0, 6, 6, 0]}>
-                {top8.map((e, i) => (
+                {top8Chart.map((e, i) => (
                   <Cell key={e.country} fill={i === 0 ? "#dc2626" : `rgba(220,38,38,${0.75 - i * 0.06})`} />
                 ))}
               </Bar>
@@ -92,12 +97,12 @@ export default function GeographicSection({ data }: Props) {
             By Fraud Rate (%) · ≥50 txns
           </p>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={byRate} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+            <BarChart data={byRateChart} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#9898ac", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-              <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={28} />
+              <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={36} />
               <Tooltip content={<Tip />} />
               <Bar dataKey="rate" radius={[0, 6, 6, 0]}>
-                {byRate.map((e, i) => (
+                {byRateChart.map((e, i) => (
                   <Cell key={e.country} fill={i === 0 ? "#d97706" : `rgba(217,119,6,${0.8 - i * 0.06})`} />
                 ))}
               </Bar>
