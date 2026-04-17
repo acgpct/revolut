@@ -643,7 +643,7 @@ function TopFraudsters({ d }: { d: Analytics }) {
               {/* Detail */}
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                  <code style={{ fontSize: 8, fontFamily: "monospace", color: MUTED }}>{f.id}</code>
+                  <code style={{ fontSize: 8, fontFamily: "monospace", color: MUTED }}>{f.full_id}</code>
                   <span style={{ fontSize: 7.5, fontWeight: 700, color: f.kyc==="PASSED" ? AMBER : RED }}>KYC {f.kyc}</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
@@ -675,7 +675,7 @@ function TopFraudsters({ d }: { d: Analytics }) {
             <ChartLabel>Figure 8 — #1 Actor: Method Breakdown</ChartLabel>
             {/* Dark strip for actor ID */}
             <div style={{ paddingBottom: 8, borderBottom: `1px solid ${RULE}`, marginBottom: 8 }}>
-              <code style={{ fontSize: 7.5, color: SUBTLE, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{top1.id}</code>
+              <code style={{ fontSize: 7.5, color: SUBTLE, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{top1.full_id}</code>
             </div>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={breakdown} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
