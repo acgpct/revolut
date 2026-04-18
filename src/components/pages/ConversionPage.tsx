@@ -34,10 +34,11 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
 
   const total = data.unique_users || 1;
   const funnelSteps = [
-    { label: "Registered Users",  value: data.unique_users             ?? 0, pct: 100 },
-    { label: "KYC Attempted",     value: data.kyc_attempted_users      ?? 0, pct: Math.round(((data.kyc_attempted_users      ?? 0) / total) * 100) },
-    { label: "KYC Passed",        value: data.kyc_passed_users         ?? 0, pct: Math.round(((data.kyc_passed_users         ?? 0) / total) * 100) },
-    { label: "Strictly Converted",value: data.strict_converted_users   ?? 0, pct: Math.round(((data.strict_converted_users   ?? 0) / total) * 100) },
+    { label: "Registered Users", value: data.unique_users ?? 0, pct: 100 },
+    { label: "Topped Up", value: data.topup_users ?? 0, pct: Math.round(((data.topup_users ?? 0) / total) * 100) },
+    { label: "KYC Passed", value: data.kyc_passed_users ?? 0, pct: Math.round(((data.kyc_passed_users ?? 0) / total) * 100) },
+    { label: "Legitimate Card Payment", value: data.legit_card_users ?? 0, pct: Math.round(((data.legit_card_users ?? 0) / total) * 100) },
+    { label: "Revolut Converted (true)", value: data.revolut_converted_users ?? 0, pct: Math.round(((data.revolut_converted_users ?? 0) / total) * 100) },
   ];
 
   const gap = ((data.marketing_rate ?? 0) - (data.strict_rate ?? 0)).toFixed(1);

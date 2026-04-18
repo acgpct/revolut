@@ -30,10 +30,13 @@ export default function ConversionSection({ data }: Props) {
     Fraud: t.fraud,
   }));
 
+  const totalUsers = data.unique_users || 1;
   const funnelSteps = [
-    { label: "Registered Users",   value: data.unique_users,              pct: 100 },
-    { label: "Passed KYC",         value: data.kyc_passed_users,          pct: Math.round(data.kyc_passed_users / data.unique_users * 100) },
-    { label: "Revolut Converted",  value: data.revolut_converted_users,   pct: Math.round(data.revolut_converted_users / data.unique_users * 100) },
+    { label: "Registered Users", value: data.unique_users, pct: 100 },
+    { label: "Topped Up", value: data.topup_users, pct: Math.round((data.topup_users / totalUsers) * 100) },
+    { label: "KYC Passed", value: data.kyc_passed_users, pct: Math.round((data.kyc_passed_users / totalUsers) * 100) },
+    { label: "Legitimate Card Payment", value: data.legit_card_users, pct: Math.round((data.legit_card_users / totalUsers) * 100) },
+    { label: "Revolut Converted (true)", value: data.revolut_converted_users, pct: Math.round((data.revolut_converted_users / totalUsers) * 100) },
   ];
 
   return (
@@ -79,23 +82,23 @@ export default function ConversionSection({ data }: Props) {
         <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           User Funnel
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 8 }}>
           {funnelSteps.map((s, i) => (
             <div key={s.label} style={{
-              background: "#f9f9fb", border: "1px solid #e8e8ed", borderRadius: 12, padding: "18px 20px",
+              background: "#f9f9fb", border: "1px solid #e8e8ed", borderRadius: 12, padding: "14px 10px",
               position: "relative", overflow: "hidden",
             }}>
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0,
                 height: `${s.pct}%`, maxHeight: "100%",
-                background: `rgba(79,70,229,${0.04 + i * 0.03})`,
+                background: `rgba(79,70,229,${0.04 + i * 0.02})`,
                 transition: "height 0.6s ease",
               }} />
-              <p style={{ fontSize: 11, fontWeight: 600, color: "#9898ac", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6, position: "relative" }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: "#9898ac", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6, position: "relative", lineHeight: 1.25 }}>
                 {s.label}
               </p>
-              <p style={{ fontSize: 26, fontWeight: 750, color: "#0a0a0f", letterSpacing: "-0.02em", position: "relative" }}>{fmt(s.value)}</p>
-              <p style={{ fontSize: 12, color: "#4f46e5", fontWeight: 600, marginTop: 4, position: "relative" }}>{s.pct}%</p>
+              <p style={{ fontSize: 20, fontWeight: 750, color: "#0a0a0f", letterSpacing: "-0.02em", position: "relative" }}>{fmt(s.value)}</p>
+              <p style={{ fontSize: 11, color: "#4f46e5", fontWeight: 600, marginTop: 4, position: "relative" }}>{s.pct}%</p>
             </div>
           ))}
         </div>

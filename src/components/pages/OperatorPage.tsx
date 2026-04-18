@@ -83,10 +83,10 @@ export default function OperatorPage({ data }: Props) {
         </p>
       </div>
 
-      {/* Severity Matrix */}
+      {/* Priority Matrix (aligned with PDF report Section 7) */}
       <div style={{ marginBottom: 40 }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a3a3a3", marginBottom: 16 }}>
-          Severity Matrix — Ease of Implementation vs Financial Impact
+          Priority Matrix — Ease of Implementation vs Financial Impact
         </p>
 
         {/* Proper grid: [y-label col] [easy col] [hard col] */}
