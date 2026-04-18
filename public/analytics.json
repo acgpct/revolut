@@ -16,6 +16,7 @@
     "card_users": 5789,
     "legit_card_users": 5568,
     "strict_converted_users": 5263,
+    "not_true_converted_users": 2758,
     "spending_users": 0,
     "converted_users": 0,
     "revolut_converted_users": 5263,

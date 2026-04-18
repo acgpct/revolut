@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Brief1 } from "@/lib/types";
+import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 
 const fmt = (n: number | undefined | null) => (n ?? 0).toLocaleString();
 
@@ -46,7 +47,7 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
       <PageHeader
         overline="Brief 1"
         title="App Conversion Rate"
-        description="A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's ~78% inflates this by including fraudsters and non-card transactions."
+        description={`A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's ${data.marketing_rate}% inflates this by using a smaller denominator (KYC-attempted users) and including fraudulent card payments.`}
       />
 
       {/* Rate comparison */}
@@ -119,7 +120,7 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
             and a numerator that includes fraudulent card payments.
             The strict definition uses <strong style={{ color: "#404040" }}>KYC-passed ∩ ≥1 legitimate card payment ÷ all users</strong>,
             giving {data.strict_rate}%. Only {fmt(data.strict_converted_users ?? 0)} of {fmt(data.unique_users)} users
-            are genuinely converted. Note: this dataset contains no date column, so the 30-day window condition cannot be applied.
+            are genuinely converted; the remaining {fmt(notTrueConvertedUserCount(data))} registered accounts have not reached that bar (same headcount used in the PDF report). Note: this dataset contains no date column, so the 30-day window condition cannot be applied.
           </p>
         </div>
       </div>

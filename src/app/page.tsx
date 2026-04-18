@@ -7,6 +7,7 @@ import ConversionPage from "@/components/pages/ConversionPage";
 import GeographicPage from "@/components/pages/GeographicPage";
 import KYCPage        from "@/components/pages/KYCPage";
 import FraudstersPage from "@/components/pages/FraudstersPage";
+import OperatorPage   from "@/components/pages/OperatorPage";
 import UploadPage     from "@/components/pages/UploadPage";
 
 const NAV_WIDTH_KEY     = "fc-nav-width";
@@ -16,14 +17,15 @@ const MIN_WIDTH         = 180;
 const MAX_WIDTH         = 320;
 const COLLAPSED_WIDTH   = 56;
 
-type PageId = "overview" | "brief1" | "brief2a" | "brief2b" | "bonus" | "upload";
+type PageId = "overview" | "brief1" | "brief2a" | "brief2b" | "bonus" | "operator" | "upload";
 
 const NAV_ITEMS: { id: PageId; label: string; tag?: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "brief1",   label: "Conversion Rate", tag: "B1" },
-  { id: "brief2a",  label: "Geographic Risk", tag: "B2A" },
-  { id: "brief2b",  label: "KYC Patterns",    tag: "B2B" },
-  { id: "bonus",    label: "Top Fraudsters",  tag: "★" },
+  { id: "overview",  label: "Overview" },
+  { id: "brief1",    label: "Conversion Rate", tag: "B1" },
+  { id: "brief2a",   label: "Geographic Risk", tag: "B2A" },
+  { id: "brief2b",   label: "KYC Patterns",    tag: "B2B" },
+  { id: "bonus",     label: "Top Fraudsters",  tag: "★" },
+  { id: "operator",  label: "Operator's Lens", tag: "⊞" },
 ];
 
 const PAGE_TITLES: Record<PageId, string> = {
@@ -32,6 +34,7 @@ const PAGE_TITLES: Record<PageId, string> = {
   brief2a:  "Geographic Risk",
   brief2b:  "KYC Patterns",
   bonus:    "Top Fraudsters",
+  operator: "Operator's Lens",
   upload:   "Upload Data",
 };
 
@@ -181,11 +184,14 @@ export default function Dashboard() {
                   cursor: "pointer",
                   background: active ? "#0f0f0f" : "transparent",
                   color: active ? "#ffffff" : "#737373",
-                  fontSize: 13,
+                  fontSize: 12.5,
                   fontWeight: active ? 600 : 400,
                   letterSpacing: "-0.01em",
                   transition: "all 120ms",
                   textAlign: "left",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = "#f5f5f5"; if (!active) e.currentTarget.style.color = "#171717"; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; if (!active) e.currentTarget.style.color = "#737373"; }}
@@ -218,11 +224,14 @@ export default function Dashboard() {
               cursor: "pointer",
               background: "transparent",
               color: "#737373",
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: 400,
               letterSpacing: "-0.01em",
               transition: "all 120ms",
               textDecoration: "none",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "#f5f5f5"; e.currentTarget.style.color = "#171717"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#737373"; }}
@@ -236,40 +245,6 @@ export default function Dashboard() {
                 <polyline points="10 9 9 9 8 9" />
               </svg>
             ) : "PDF Report"}
-          </a>
-
-          {/* Slides link */}
-          <a
-            href="/slides"
-            title={collapsed ? "Slides" : undefined}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              width: "100%",
-              padding: collapsed ? "8px 0" : "8px 12px",
-              justifyContent: collapsed ? "center" : "flex-start",
-              borderRadius: 8,
-              border: "none",
-              marginBottom: 2,
-              cursor: "pointer",
-              background: "transparent",
-              color: "#737373",
-              fontSize: 13,
-              fontWeight: 400,
-              letterSpacing: "-0.01em",
-              transition: "all 120ms",
-              textDecoration: "none",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#f5f5f5"; e.currentTarget.style.color = "#171717"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#737373"; }}
-          >
-            {collapsed ? (
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <path d="M8 21h8M12 17v4" />
-              </svg>
-            ) : "Slides"}
           </a>
 
           {/* Upload separator */}
@@ -289,11 +264,14 @@ export default function Dashboard() {
               cursor: "pointer",
               background: activePage === "upload" ? "#0f0f0f" : "transparent",
               color: activePage === "upload" ? "#ffffff" : "#737373",
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: activePage === "upload" ? 600 : 400,
               letterSpacing: "-0.01em",
               transition: "all 120ms",
               textAlign: "left",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
             onMouseEnter={e => { if (activePage !== "upload") { e.currentTarget.style.background = "#f5f5f5"; e.currentTarget.style.color = "#171717"; } }}
             onMouseLeave={e => { if (activePage !== "upload") { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#737373"; } }}
@@ -409,6 +387,7 @@ export default function Dashboard() {
               {activePage === "brief2a"   && <GeographicPage data={analytics.brief2a.geo_risk} />}
               {activePage === "brief2b"   && <KYCPage        data={analytics.brief2b} fraudByType={analytics.fraud_by_type} kycStatus={analytics.kyc_status} kycFraudStatus={analytics.kyc_fraud_status} />}
               {activePage === "bonus"     && <FraudstersPage fraudsters={analytics.bonus.top_fraudsters} totalFraudsters={analytics.bonus.total_fraudsters} />}
+              {activePage === "operator"  && <OperatorPage   data={analytics} />}
               {activePage === "upload"    && <UploadPage     onAnalytics={handleNewData} />}
             </>
           )}

@@ -70,6 +70,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   const legitCardUsers = new Set(legitNorm.filter((r) => r.type === "CARD_PAYMENT").map((r) => r.user_id));
   const strictConverted = new Set([...kycPassedUsers].filter((u) => legitCardUsers.has(u)));
   const strictRate = round2((strictConverted.size / (totalUsers || 1)) * 100);
+  const notTrueConvertedUsers = totalUsers - strictConverted.size;
 
   // Transaction-type map
   const txnTypeMap: Record<string, { count: number; fraud: number }> = {};
@@ -235,6 +236,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       card_users:              cardUsers.size,
       legit_card_users:        legitCardUsers.size,
       strict_converted_users:  strictConverted.size,
+      not_true_converted_users: notTrueConvertedUsers,
       // legacy fields kept for backwards compat
       spending_users:          0,
       converted_users:         0,

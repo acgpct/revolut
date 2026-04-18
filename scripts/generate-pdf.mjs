@@ -31,7 +31,7 @@ async function run() {
   await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
 
   console.log(`Opening ${URL}…`);
-  await page.goto(URL, { waitUntil: "networkidle0", timeout: 45000 });
+  await page.goto(URL, { waitUntil: "networkidle0", timeout: 120000 });
 
   // Wait for Recharts SVGs to appear
   console.log("Waiting for charts to render…");

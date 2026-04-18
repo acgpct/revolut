@@ -22,6 +22,8 @@ export interface Brief1 {
   card_users: number;
   legit_card_users: number;
   strict_converted_users: number;
+  /** Registered users who have not reached true conversion (KYC-passed + ≥1 legitimate card). Same as report/PDF “not converted” headcount. Omitted in older snapshots — derive as unique_users − revolut_converted_users. */
+  not_true_converted_users?: number;
   // legacy / compat
   spending_users: number;
   converted_users: number;

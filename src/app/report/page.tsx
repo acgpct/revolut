@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { Analytics } from "@/lib/types";
+import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt  = (n: number) => n.toLocaleString();
@@ -133,7 +134,7 @@ function Footer({ n, total }: { n: number; total: number }) {
   );
 }
 
-const TOTAL = 8;
+const TOTAL = 9;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAGE 1 — TITLE ONLY (full black)
@@ -231,7 +232,8 @@ function CoverData({ d }: { d: Analytics }) {
           { n: "3", t: "Brief 2A — Geographic Risk",       s: "Volume vs rate: two independent threats" },
           { n: "4", t: "Brief 2B — KYC-Passed Fraudsters", s: "Behavioural anomalies identity checks miss" },
           { n: "5", t: "Bonus — Top Fraudster Ranking",    s: `Composite scoring across ${fmt(d.bonus.total_fraudsters)} actors` },
-          { n: "6", t: "Recommendations",                  s: "Four actions linked directly to findings" },
+          { n: "6", t: "Recommendations",                  s: "Four actions with quantified cost of inaction" },
+          { n: "7", t: "Operator's Lens",                  s: "Priority matrix · Forward-looking exposure model" },
         ].map((t) => (
           <div key={t.n} style={{ display: "flex", gap: 14, padding: "9px 0", borderBottom: `1px solid ${RULE}`, alignItems: "baseline" }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: MUTED, minWidth: 14 }}>{t.n}</span>
@@ -290,7 +292,7 @@ function ExecSummary({ d }: { d: Analytics }) {
 
   return (
     <ContentPage>
-      <SecHead overline="Section 1" title="Executive Summary" desc="Four analytical briefs surface distinct fraud risks across conversion methodology, geography, identity verification, and actor behaviour." />
+      <SecHead overline="Section 1" title="Executive Summary" desc="Four analytical briefs surface four distinct fraud risks across conversion methodology, geography, identity verification, and actor behaviour." />
 
       {/* 6 KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 20px", marginBottom: 18 }}>
@@ -344,7 +346,7 @@ function ExecSummary({ d }: { d: Analytics }) {
 function ConversionRate({ d }: { d: Analytics }) {
   const { brief1, fraud_by_type } = d;
   const gap      = (brief1.marketing_rate - brief1.revolut_rate).toFixed(1);
-  const excluded = fmt(brief1.unique_users - brief1.revolut_converted_users);
+  const excluded = fmt(notTrueConvertedUserCount(brief1));
   const total    = brief1.unique_users;
 
   const funnel = [
@@ -370,7 +372,7 @@ function ConversionRate({ d }: { d: Analytics }) {
         <div style={{ borderTop: `1.5px solid ${RULE}`, paddingTop: 10 }}>
           <OL>Marketing Definition · Incorrect</OL>
           <p style={{ fontSize: 54, fontWeight: 900, letterSpacing: "-0.05em", color: "#d0d0d0", lineHeight: 1, marginBottom: 6 }}>{brief1.marketing_rate}%</p>
-          <Body>TOPUP + any spending / all users — includes fraudsters, ATM, P2P and bank transfers that generate no interchange revenue.</Body>
+          <Body>Card users (including fraudulent card payments) ÷ KYC-attempted users — a smaller denominator than all registered users, with a numerator that does not map to interchange revenue.</Body>
         </div>
         <div style={{ borderTop: `1.5px solid ${INK}`, paddingTop: 10 }}>
           <OL>Revolut Definition · Correct</OL>
@@ -673,6 +675,11 @@ function TopFraudsters({ d }: { d: Analytics }) {
   const TYPE_S: Record<string,string> = { CARD_PAYMENT:"Card", TOPUP:"Top-up", ATM:"ATM", BANK_TRANSFER:"Transfer", P2P:"P2P" };
   const breakdown = top1 ? Object.entries(top1.type_breakdown).map(([t,c]) => ({ name: TYPE_S[t]||t, count: c as number })) : [];
 
+  // Forward-looking projection (assumes 6-month observation window)
+  const avgTxnVal   = top1 ? top1.amount / top1.txns : 0;       // £59,267/txn
+  const dailyRate   = top1 ? top1.txns / 180 : 0;               // ~5.7 txns/day
+  const proj30d     = Math.round(dailyRate * 30 * avgTxnVal);   // ~£10.2M
+
   return (
     <ContentPage>
       <SecHead overline="Section 5 — Bonus" title="Top Fraudster Prioritisation" desc={`Composite risk score across ${fmt(bonus.total_fraudsters)} unique actors. Ranking by amount alone misses persistent, multi-channel actors. Score = frequency (40%) + impact (30%) + diversity + geography.`} />
@@ -776,6 +783,18 @@ function TopFraudsters({ d }: { d: Analytics }) {
           </div>
         )}
       </div>
+      {/* Forward-Looking Projection */}
+      {top1 && (
+        <div style={{ marginTop: 10, padding: "8px 14px", borderLeft: `2px solid ${RED}`, background: "#fafafa" }}>
+          <p style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: RED, marginBottom: 4 }}>30-Day Forward Projection</p>
+          <Body>
+            At <strong style={{ color: INK }}>{top1.full_id.slice(0,8)}</strong>&apos;s current run rate of {fmt(top1.txns)} transactions generating {fmtM(top1.amount)}, and assuming this dataset reflects a 6-month observation window (approximately {dailyRate.toFixed(1)} transactions per day at {fmtM(Math.round(avgTxnVal))} average),{" "}
+            <strong style={{ color: RED }}>30 additional days without intervention projects {fmtM(proj30d)} in further exposure.</strong>{" "}
+            With all {top1.types_used} transaction channels already active across {top1.countries_hit} countries, velocity — not footprint expansion — is the only remaining detection window.
+          </Body>
+        </div>
+      )}
+
       <Footer n={7} total={TOTAL} />
     </ContentPage>
   );
@@ -791,63 +810,72 @@ function Recommendations({ d }: { d: Analytics }) {
   // Geo-derived values
   const geoByVol  = d.brief2a.geo_risk;
   const geoByRate = [...d.brief2a.geo_risk].sort((a,b) => b.rate - a.rate);
-  const hvC = geoByVol[0];   // highest volume country
-  const hrC = geoByRate[0];  // highest rate country (≥50 txns)
-  // Find the second-highest-volume country for the dual-axis comparison
-  const secVolC = geoByVol[1];
-  const rateRatio = hvC && secVolC ? (hrC.rate / (hvC.rate || 1)).toFixed(1) : "—";
+  const hvC = geoByVol[0];
+  const hrC = geoByRate[0];
+  const rateRatio = hvC && hrC ? (hrC.rate / (hvC.rate || 1)).toFixed(1) : "—";
 
-  // ATM / bank-transfer / card pp deltas
+  // ATM / bank-transfer pp deltas
   const atmD  = ((brief2b.fraud_type_pct["ATM"]          ?? 0) - (brief2b.legit_type_pct["ATM"]          ?? 0)).toFixed(1);
   const bankD = ((brief2b.fraud_type_pct["BANK_TRANSFER"] ?? 0) - (brief2b.legit_type_pct["BANK_TRANSFER"] ?? 0)).toFixed(1);
-  const cardD = ((brief2b.fraud_type_pct["CARD_PAYMENT"]  ?? 0) - (brief2b.legit_type_pct["CARD_PAYMENT"]  ?? 0)).toFixed(1);
-  const legitCard = brief2b.legit_type_pct["CARD_PAYMENT"] ?? 0;
 
-  // Top-actor dynamic values
+  // Top-actor values
   const top1 = bonus.top_fraudsters[0];
   const top2 = bonus.top_fraudsters[1];
   const scoreRatio = top2 ? (top1.score / top2.score).toFixed(1) : "—";
+
+  // Cost of inaction computations
+  const ghostUsers    = notTrueConvertedUserCount(brief1);
+  const kycFraudTotal = brief2b.fraud_count * brief2b.fraud_avg_amount;
+  const top5Total     = bonus.top_fraudsters.reduce((s: number, f) => s + f.amount, 0);
 
   const recs = [
     {
       tag:"REC 1 · Brief 1",
       title:`Retire the ${brief1.marketing_rate}% conversion metric`,
-      body:`Replace with ${brief1.revolut_rate}% — KYC-passed users with ≥1 legitimate card payment. This is the only signal of a revenue-positive primary account. The current metric overstates conversion by ${gap}pp by counting ${fmt(brief1.unique_users - brief1.revolut_converted_users)} users generating zero interchange revenue.`,
-      ev:`${fmt(brief1.unique_users - brief1.revolut_converted_users)} users excluded under the correct definition.`,
+      body:`Replace with ${brief1.revolut_rate}% — KYC-passed users with ≥1 legitimate card payment, the only signal of a revenue-positive primary account. Marketing's definition currently counts ${fmt(ghostUsers)} users who generate zero interchange revenue.`,
+      ev:`${fmt(ghostUsers)} users excluded under the correct definition.`,
+      cost:`At £90 annual ARPU — a conservative industry benchmark for neobank interchange revenue — those ${fmt(ghostUsers)} ghost conversions represent ~${fmtM(ghostUsers * 90)} in phantom revenue per cohort — a planning error that compounds with every acquisition campaign.`,
     },
     {
       tag:"REC 2 · Brief 2A",
       title:"Dual-axis geographic risk model",
-      body:`Track ${hvC?.country} (volume: ${fmt(hvC?.fraud)} cases, ${fmtM(hvC?.fraud_amount)}) and ${hrC?.country} (rate: ${hrC?.rate}%) on separate KPI dashboards with independent alert thresholds. A single volume-based view hides ${hrC?.country}'s rate — ${rateRatio}× higher than ${hvC?.country} — which likely represents a different fraud vector.`,
-      ev:`${hrC?.country} fraud rate ${hrC?.rate}% vs ${hvC?.country} ${hvC?.rate}% despite a fraction of the transaction volume.`,
+      body:`Track ${hvC?.country} (volume: ${fmt(hvC?.fraud)} cases) and ${hrC?.country} (rate: ${hrC?.rate}%) on separate KPI dashboards with independent alert thresholds. A single volume-based view hides ${hrC?.country}'s rate — ${rateRatio}× higher.`,
+      ev:`${hrC?.country} fraud rate ${hrC?.rate}% vs ${hvC?.country} ${hvC?.rate}% at a fraction of the volume.`,
+      cost:`${hrC?.country}'s ${hrC?.rate}% rate represents ${fmtM(hrC?.fraud_amount ?? 0)} in losses that targeted rate-based controls would have elevated to tier-1 priority.`,
     },
     {
       tag:"REC 3 · Brief 2B",
       title:"Layer behavioural rules on top of KYC",
-      body:`Flag users where ATM share >25% (+${atmD}pp above baseline), bank transfer share >15% (+${bankD}pp), or card payment share <45% (vs ${legitCard}% for legitimate users — matching the 45.61% fraud profile). Two or more signals within 30 days of registration should trigger enhanced due diligence.`,
+      body:`Flag users where ATM share >25% (+${atmD}pp above baseline), bank transfer >15% (+${bankD}pp), or card payment <45%. Two or more signals within 30 days of registration should trigger enhanced due diligence.`,
       ev:`${fmt(brief2b.fraud_count)} fraud txns from KYC-passed users bypassed identity controls entirely.`,
+      cost:`${fmt(brief2b.fraud_count)} fraud transactions × £${(brief2b.fraud_avg_amount/1000).toFixed(1)}K average = ${fmtM(Math.round(kycFraudTotal))} in losses that post-onboarding behavioural rules would have intercepted.`,
     },
     {
       tag:"REC 4 · Bonus",
       title:"Immediate action + nightly composite scoring",
-      body:`Suspend ${top1?.full_id.slice(0,8)} (score ${top1?.score.toLocaleString()} — ${scoreRatio}× second-ranked) immediately. Run composite scoring nightly across all ${fmt(bonus.total_fraudsters)} actors to surface emerging high-risk profiles before losses compound further.`,
-      ev:`${top1?.full_id.slice(0,8)}: ${fmt(top1?.txns)} txns across ${top1?.countries_hit} countries; no legitimate profile matches this pattern.`,
+      body:`Suspend ${top1?.full_id.slice(0,8)} (${scoreRatio}× second-ranked) immediately. Run composite scoring nightly across all ${fmt(bonus.total_fraudsters)} actors to surface emerging high-risk profiles before losses compound.`,
+      ev:`${top1?.full_id.slice(0,8)}: ${fmt(top1?.txns)} txns across ${top1?.countries_hit} countries.`,
+      cost:`Top 5 actors combined: ${fmtM(Math.round(top5Total))} at risk. Every day without nightly scoring is a day the ranked list goes un-actioned.`,
     },
   ];
 
   return (
     <ContentPage>
-      <SecHead overline="Section 6" title="Recommendations" desc="Each recommendation is directly traceable to a quantified finding. No action is proposed without a supporting data point." />
+      <SecHead overline="Section 6" title="Recommendations" desc="Each recommendation is directly traceable to a quantified finding. Costs of inaction are priced." />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         {recs.map((r, i) => (
-          <div key={r.tag} style={{ paddingTop: 14, paddingBottom: 14, borderBottom: `1px solid ${RULE}` }}>
+          <div key={r.tag} style={{ paddingTop: 10, paddingBottom: 10, borderBottom: `1px solid ${RULE}` }}>
             <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
               <div style={{ minWidth: 3, alignSelf: "stretch", background: i === 0 ? INK : RULE, borderRadius: 99, flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, marginBottom: 4 }}>{r.tag}</p>
-                <p style={{ fontSize: 12, fontWeight: 800, color: INK, letterSpacing: "-0.01em", marginBottom: 5 }}>{r.title}</p>
-                <Body style={{ marginBottom: 8 }}>{r.body}</Body>
+                <p style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, marginBottom: 3 }}>{r.tag}</p>
+                <p style={{ fontSize: 11.5, fontWeight: 800, color: INK, letterSpacing: "-0.01em", marginBottom: 4 }}>{r.title}</p>
+                <Body style={{ marginBottom: 5 }}>{r.body}</Body>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 7.5, fontWeight: 800, color: RED, flexShrink: 0, marginTop: 1 }}>COST IF UNADDRESSED</span>
+                  <p style={{ fontSize: 8.5, color: MUTED }}>{r.cost}</p>
+                </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
                   <span style={{ fontSize: 7.5, fontWeight: 800, color: SUBTLE, flexShrink: 0 }}>EVIDENCE</span>
                   <p style={{ fontSize: 8.5, color: SUBTLE, fontStyle: "italic" }}>{r.ev}</p>
@@ -858,27 +886,134 @@ function Recommendations({ d }: { d: Analytics }) {
         ))}
       </div>
 
-      {/* Strategic synthesis */}
-      <div style={{ marginTop: 14, paddingTop: 10, borderTop: `2px solid ${INK}` }}>
-        <p style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, marginBottom: 5 }}>Strategic Synthesis</p>
-        <Body>
-          Taken together, these findings reveal a single systemic gap: Revolut&apos;s defences are calibrated to stop fraud <em>at the gate</em> (KYC) rather than <em>in motion</em>.
-          The conversion inflation, the geographic blind spot, the KYC bypass pattern, and the persistence of top actors all point to the same root cause — <strong style={{ color: INK }}>post-onboarding behavioural monitoring is absent.</strong>{" "}
-          Fixing any one of these in isolation treats a symptom. Addressing the root cause — real-time transaction-level anomaly detection layered on top of identity verification — resolves all four simultaneously.
-        </Body>
-      </div>
-
       {/* Methodology note */}
-      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${RULE}` }}>
-        <p style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, marginBottom: 5 }}>Dataset & Methodology Notes</p>
+      <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${RULE}` }}>
+        <p style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, marginBottom: 4 }}>Dataset & Methodology Notes</p>
         <Body>
           {fmt(overview.total_txns)} transactions · {fmt(overview.unique_users)} unique users · {fmtM(overview.total_amount)} total volume.
-          No date column present — the 30-day registration window could not be applied, but all directional findings remain consistent.
-          Geographic analysis excludes countries with &lt;50 transactions; rows where <code>MERCHANT_COUNTRY</code> is null are retained and labelled &ldquo;Unknown / Null&rdquo; — they participate in volume ranking as a distinct category rather than being silently dropped.
+          No date column — 30-day registration window not applied; directional findings remain consistent.
+          Geographic analysis excludes countries with &lt;50 transactions; <code>MERCHANT_COUNTRY</code> nulls labelled &ldquo;Unknown / Null&rdquo;.
           Composite fraud actor score independently derived with no reliance on pre-existing risk flags.
         </Body>
       </div>
       <Footer n={8} total={TOTAL} />
+    </ContentPage>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAGE 9 — OPERATOR'S LENS: SEVERITY MATRIX + STRATEGIC SYNTHESIS
+// ═══════════════════════════════════════════════════════════════════════════════
+function OperatorLens({ d }: { d: Analytics }) {
+  const { brief1, brief2b, bonus } = d;
+  const kycFraudTotal = brief2b.fraud_count * brief2b.fraud_avg_amount;
+  const top5Total     = bonus.top_fraudsters.reduce((s: number, f) => s + f.amount, 0);
+  const top1          = bonus.top_fraudsters[0];
+  const avgTxnVal     = top1 ? top1.amount / top1.txns : 0;
+  const proj30d       = Math.round((top1 ? top1.txns / 180 : 0) * 30 * avgTxnVal);
+
+  // 2×2 quadrant data  [ease: easy|hard, impact: high|low]
+  const quadrants = [
+    {
+      ease: "easy", impact: "high",
+      tag: "QUICK WIN · ACT TODAY",
+      tagColor: INK,
+      title: "REC 4 — Suspend Top Actors",
+      detail: `Top 5 actors: ${fmtM(Math.round(top5Total))} at risk. Actor suspension: hours. Nightly composite scoring: days.`,
+      border: INK,
+      bg: "#fafafa",
+    },
+    {
+      ease: "hard", impact: "high",
+      tag: "STRATEGIC BET · 3–6 MONTHS",
+      tagColor: RED,
+      title: "REC 3 — Behavioural Rule Engine",
+      detail: `${fmtM(Math.round(kycFraudTotal))} addressable. Requires rules pipeline + monitoring infra. Highest financial leverage.`,
+      border: RED,
+      bg: "#fff9f9",
+    },
+    {
+      ease: "easy", impact: "low",
+      tag: "HYGIENE · DAYS TO WEEKS",
+      tagColor: MUTED,
+      title: "REC 1 + 2 — Metric Fix & Geo Model",
+      detail: `Reporting change (${brief1.revolut_rate}% replaces ${brief1.marketing_rate}%) + dashboard dual-axis. Eliminates structural blind spots.`,
+      border: RULE,
+      bg: "#ffffff",
+    },
+    {
+      ease: "hard", impact: "low",
+      tag: "— NOT APPLICABLE",
+      tagColor: SUBTLE,
+      title: "No recommendations in this quadrant",
+      detail: "All four actions have clear, positive ROI. No low-impact, high-effort proposals are made.",
+      border: RULE,
+      bg: "#f8f8f8",
+    },
+  ];
+
+  return (
+    <ContentPage>
+      <SecHead overline="Section 7 — Operator's Lens" title="Priority Matrix & Strategic Synthesis" desc="Ranking the four recommendations by ease of implementation vs financial impact." />
+
+      {/* 2×2 Matrix — proper grid: [y-label col] [easy col] [hard col] */}
+      <div style={{ display: "grid", gridTemplateColumns: "14px 1fr 1fr", gridTemplateRows: "auto 1fr 1fr", gap: 8, marginBottom: 14 }}>
+
+        {/* ── Header row ── */}
+        <div /> {/* corner */}
+        {["EASY TO IMPLEMENT", "HARDER TO IMPLEMENT"].map(h => (
+          <div key={h} style={{ textAlign: "center", paddingBottom: 4 }}>
+            <p style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE }}>{h}</p>
+          </div>
+        ))}
+
+        {/* ── Row 1: HIGH IMPACT ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gridRow: "2 / 3" }}>
+          <p style={{ fontSize: 6.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, writingMode: "vertical-rl", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>HIGH IMPACT</p>
+        </div>
+        {quadrants.filter(q => q.impact === "high").map(q => (
+          <div key={q.title} style={{ border: `1.5px solid ${q.border}`, borderRadius: 6, padding: "12px 14px", background: q.bg, display: "flex", flexDirection: "column", gap: 5 }}>
+            <p style={{ fontSize: 6.5, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: q.tagColor }}>{q.tag}</p>
+            <p style={{ fontSize: 10, fontWeight: 800, color: INK, letterSpacing: "-0.01em", lineHeight: 1.2 }}>{q.title}</p>
+            <p style={{ fontSize: 8, color: MUTED, lineHeight: 1.55 }}>{q.detail}</p>
+          </div>
+        ))}
+
+        {/* ── Row 2: LOW IMPACT ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gridRow: "3 / 4" }}>
+          <p style={{ fontSize: 6.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, writingMode: "vertical-rl", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>LOW IMPACT</p>
+        </div>
+        {quadrants.filter(q => q.impact === "low").map(q => (
+          <div key={q.title} style={{ border: `1.5px solid ${q.border}`, borderRadius: 6, padding: "12px 14px", background: q.bg, display: "flex", flexDirection: "column", gap: 5 }}>
+            <p style={{ fontSize: 6.5, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: q.tagColor }}>{q.tag}</p>
+            <p style={{ fontSize: 10, fontWeight: 800, color: INK, letterSpacing: "-0.01em", lineHeight: 1.2 }}>{q.title}</p>
+            <p style={{ fontSize: 8, color: MUTED, lineHeight: 1.55 }}>{q.detail}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Forward-looking callout */}
+      <div style={{ padding: "10px 14px", border: `1px solid ${RULE}`, borderLeft: `3px solid ${RED}`, marginBottom: 14 }}>
+        <p style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: RED, marginBottom: 5 }}>Forward-Looking Exposure Model</p>
+        <Body>
+          At <strong style={{ color: INK }}>{top1?.full_id.slice(0,8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtM(top1?.amount ?? 0)}, and assuming a 6-month observation window (approximately {top1 ? (top1.txns/180).toFixed(1) : 0} transactions per day at {fmtM(Math.round(avgTxnVal))} average),{" "}
+          <strong style={{ color: RED }}>30 additional days without intervention projects {fmtM(proj30d)} in further exposure.</strong>{" "}
+          Risk compounds in real time: each detection cycle that passes without nightly scoring is a window where ranked actors continue operating unimpeded. The priority matrix above exists precisely to collapse that window.
+        </Body>
+      </div>
+
+      {/* Strategic synthesis */}
+      <div style={{ paddingTop: 10, borderTop: `2px solid ${INK}` }}>
+        <p style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SUBTLE, marginBottom: 5 }}>Strategic Synthesis</p>
+        <Body>
+          Taken together, these findings reveal a single systemic gap: Revolut&apos;s defences are calibrated to stop fraud <em>at the gate</em> (KYC) rather than <em>in motion</em>.
+          The conversion inflation, the geographic blind spot, the KYC bypass pattern, and the persistence of top actors all point to the same root cause —{" "}
+          <strong style={{ color: INK }}>post-onboarding behavioural monitoring is absent.</strong>{" "}
+          The priority matrix above surfaces the execution path: suspend today (REC 4), ship the rule engine in Q3 (REC 3), fix the reporting in the next sprint (REC 1 + 2). Addressing the root cause resolves all four simultaneously.
+        </Body>
+      </div>
+
+      <Footer n={9} total={TOTAL} />
     </ContentPage>
   );
 }
@@ -922,9 +1057,6 @@ export default function ReportPage() {
           <span style={{ fontSize:12, color:"rgba(255,255,255,0.45)" }}>Financial Crime Intelligence Report</span>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <a href="/slides" style={{ fontSize:12, fontWeight:600, padding:"6px 14px", borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", color:"rgba(255,255,255,0.55)", textDecoration:"none" }}>
-            Slides
-          </a>
           <button onClick={() => window.print()} style={{
             fontSize:12, fontWeight:700, padding:"6px 18px", borderRadius:7,
             background:"#fff", color:"#0f0f0f", border:"none", cursor:"pointer",
@@ -948,6 +1080,7 @@ export default function ReportPage() {
         <KYCPatterns     d={data} />
         <TopFraudsters   d={data} />
         <Recommendations d={data} />
+        <OperatorLens    d={data} />
       </div>
     </div>
   );

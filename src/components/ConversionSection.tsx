@@ -3,6 +3,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
 import SectionCard from "./SectionCard";
 import type { Brief1 } from "@/lib/types";
+import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 
 const fmt = (n: number | undefined | null) => (n ?? 0).toLocaleString();
 
@@ -40,13 +41,13 @@ export default function ConversionSection({ data }: Props) {
       tag="Brief 1"
       tagColor="black"
       title="Growth Audit — App Conversion Rate"
-      subtitle="A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's ~78% inflates this by including fraudsters and non-card transactions."
+      subtitle="A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's headline rate inflates the numerator (any card activity, including fraud) and uses a smaller denominator (KYC-attempted only)."
     >
       {/* Rate comparison */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         {[
-          { label: "Marketing Definition", value: `${data.marketing_rate}%`, sub: "TOPUP + any spending / all users (incl. fraudsters)", color: "#d97706", bg: "#fffbeb" },
-          { label: "Revolut Definition", value: `${data.revolut_rate}%`, sub: "KYC PASSED + ≥1 legitimate card payment / all users", color: "#4f46e5", bg: "#eef2ff" },
+          { label: "Marketing Definition", value: `${data.marketing_rate}%`, sub: "Card users (incl. fraud) ÷ KYC-attempted — smaller denominator", color: "#d97706", bg: "#fffbeb" },
+          { label: "Revolut Definition", value: `${data.revolut_rate}%`, sub: "KYC passed + ≥1 legitimate card payment ÷ all registered users", color: "#4f46e5", bg: "#eef2ff" },
         ].map((r) => (
           <div key={r.label} style={{ background: r.bg, borderRadius: 14, padding: "22px 24px" }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "#6b6b80", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
@@ -65,11 +66,11 @@ export default function ConversionSection({ data }: Props) {
       }}>
         <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>💡</span>
         <p style={{ fontSize: 13, color: "#78350f", lineHeight: 1.6 }}>
-          <strong>Reverse-engineering the ~78% figure:</strong> the task's stated benchmark maps to <em>users who made a TOPUP or any spend ÷ all registered users</em> — which, on this dataset, computes to <strong>{data.marketing_rate}%</strong>, confirming our reconstruction of Marketing's definition.{" "}
-          <strong>Why the gap?</strong> That {data.marketing_rate}% counts any user who topped up AND spent, including fraudsters and non-card transactions that generate <em>no interchange revenue</em>.
-          The Revolut definition requires three conditions: <strong>KYC passed</strong>, <strong>≥1 legitimate card payment</strong> (interchange-generating), and ideally within 30 days of sign-up (date data unavailable here).
+          <strong>Marketing rate reconstruction:</strong> on this dataset the headline figure aligns with <em>any user with a card payment ÷ users who attempted KYC</em> — <strong>{data.marketing_rate}%</strong> — a numerator that includes fraudulent card use and a denominator smaller than all registered users.{" "}
+          <strong>Why the gap vs true conversion?</strong> Many of those users never generate <em>interchange revenue</em> (non-card spend, or no legitimate card payment after KYC).
+          The Revolut definition requires <strong>KYC passed</strong>, <strong>≥1 legitimate card payment</strong>, and ideally within 30 days of sign-up (date data unavailable here).
           This yields <strong>{data.revolut_rate}%</strong> — the only rate that represents a genuine, revenue-positive customer.
-          {" "}<strong>{fmt(data.converted_users - data.revolut_converted_users)} users</strong> drop out under the correct definition.
+          {" "}<strong>{fmt(notTrueConvertedUserCount(data))} users</strong> of {fmt(data.unique_users)} registered accounts have not reached that bar.
         </p>
       </div>
 
