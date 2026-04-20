@@ -1038,8 +1038,8 @@
     "legit_median_birth_year": 1986,
     "fraud_avg_txns_per_user": 47.35,
     "legit_avg_txns_per_user": 98.9,
-    "fraud_avg_countries": 2.52,
-    "legit_avg_countries": 4.75,
+    "fraud_avg_countries": 1.52,
+    "legit_avg_countries": 3.76,
     "kyc_fraud_merchant_top": [
       {
         "country": "GBR",
@@ -1181,7 +1181,7 @@
         "txns": 1029,
         "amount": 60986488,
         "types_used": 5,
-        "countries_hit": 12,
+        "countries_hit": 11,
         "kyc": "PENDING",
         "type_breakdown": {
           "TOPUP": 52,
@@ -1190,12 +1190,12 @@
           "P2P": 48,
           "BANK_TRANSFER": 20
         },
-        "score": 96.3,
+        "score": 96.1,
         "w_value": 0.35,
         "w_txns": 0.3,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.06315789473684211
+        "w_geo": 0.061111111111111116
       },
       {
         "id": "6eb51e3f…",
@@ -1203,7 +1203,7 @@
         "txns": 590,
         "amount": 3918984,
         "types_used": 4,
-        "countries_hit": 19,
+        "countries_hit": 18,
         "kyc": "PASSED",
         "type_breakdown": {
           "CARD_PAYMENT": 426,
@@ -1224,7 +1224,7 @@
         "txns": 508,
         "amount": 2950255,
         "types_used": 5,
-        "countries_hit": 9,
+        "countries_hit": 8,
         "kyc": "PASSED",
         "type_breakdown": {
           "TOPUP": 59,
@@ -1233,12 +1233,12 @@
           "ATM": 50,
           "P2P": 19
         },
-        "score": 46.2,
+        "score": 45.9,
         "w_value": 0.016931443076374557,
         "w_txns": 0.14810495626822157,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.04736842105263158
+        "w_geo": 0.044444444444444446
       },
       {
         "id": "b8271606…",
@@ -1246,7 +1246,7 @@
         "txns": 340,
         "amount": 11827642,
         "types_used": 5,
-        "countries_hit": 4,
+        "countries_hit": 3,
         "kyc": "PASSED",
         "type_breakdown": {
           "TOPUP": 31,
@@ -1255,12 +1255,12 @@
           "BANK_TRANSFER": 9,
           "P2P": 12
         },
-        "score": 43.8,
+        "score": 43.4,
         "w_value": 0.06787855532851801,
         "w_txns": 0.09912536443148688,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.021052631578947368
+        "w_geo": 0.016666666666666666
       },
       {
         "id": "25c2ecb3…",
@@ -1268,7 +1268,7 @@
         "txns": 460,
         "amount": 3620232,
         "types_used": 5,
-        "countries_hit": 6,
+        "countries_hit": 5,
         "kyc": "PASSED",
         "type_breakdown": {
           "CARD_PAYMENT": 314,
@@ -1277,12 +1277,12 @@
           "ATM": 47,
           "P2P": 30
         },
-        "score": 43.6,
+        "score": 43.3,
         "w_value": 0.020776425099277726,
         "w_txns": 0.13411078717201166,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.031578947368421054
+        "w_geo": 0.02777777777777778
       }
     ],
     "top_fraudsters_by_amount": [
@@ -1292,7 +1292,7 @@
         "txns": 1029,
         "amount": 60986488,
         "types_used": 5,
-        "countries_hit": 12,
+        "countries_hit": 11,
         "kyc": "PENDING",
         "type_breakdown": {
           "TOPUP": 52,
@@ -1301,12 +1301,12 @@
           "P2P": 48,
           "BANK_TRANSFER": 20
         },
-        "score": 96.3,
+        "score": 96.1,
         "w_value": 0.35,
         "w_txns": 0.3,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.06315789473684211
+        "w_geo": 0.061111111111111116
       },
       {
         "id": "310667d1…",
@@ -1314,7 +1314,7 @@
         "txns": 60,
         "amount": 13460553,
         "types_used": 4,
-        "countries_hit": 3,
+        "countries_hit": 2,
         "kyc": "PASSED",
         "type_breakdown": {
           "TOPUP": 12,
@@ -1322,12 +1322,12 @@
           "P2P": 7,
           "CARD_PAYMENT": 30
         },
-        "score": 34.1,
+        "score": 33.6,
         "w_value": 0.07724979260979907,
         "w_txns": 0.017492711370262388,
         "w_rate": 0.15,
         "w_types": 0.08000000000000002,
-        "w_geo": 0.015789473684210527
+        "w_geo": 0.011111111111111112
       },
       {
         "id": "2182c140…",
@@ -1335,18 +1335,18 @@
         "txns": 14,
         "amount": 11910750,
         "types_used": 2,
-        "countries_hit": 1,
+        "countries_hit": 0,
         "kyc": "PASSED",
         "type_breakdown": {
           "TOPUP": 7,
           "BANK_TRANSFER": 7
         },
-        "score": 26.8,
+        "score": 26.2,
         "w_value": 0.06835551015825013,
         "w_txns": 0.004081632653061224,
         "w_rate": 0.15,
         "w_types": 0.04000000000000001,
-        "w_geo": 0.005263157894736842
+        "w_geo": 0
       },
       {
         "id": "b8271606…",
@@ -1354,7 +1354,7 @@
         "txns": 340,
         "amount": 11827642,
         "types_used": 5,
-        "countries_hit": 4,
+        "countries_hit": 3,
         "kyc": "PASSED",
         "type_breakdown": {
           "TOPUP": 31,
@@ -1363,12 +1363,12 @@
           "BANK_TRANSFER": 9,
           "P2P": 12
         },
-        "score": 43.8,
+        "score": 43.4,
         "w_value": 0.06787855532851801,
         "w_txns": 0.09912536443148688,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.021052631578947368
+        "w_geo": 0.016666666666666666
       },
       {
         "id": "2ba04c04…",
@@ -1376,7 +1376,7 @@
         "txns": 200,
         "amount": 6107270,
         "types_used": 5,
-        "countries_hit": 3,
+        "countries_hit": 2,
         "kyc": "PASSED",
         "type_breakdown": {
           "TOPUP": 28,
@@ -1385,12 +1385,12 @@
           "BANK_TRANSFER": 5,
           "P2P": 2
         },
-        "score": 35.9,
+        "score": 35.4,
         "w_value": 0.03504947686116964,
         "w_txns": 0.05830903790087463,
         "w_rate": 0.15,
         "w_types": 0.1,
-        "w_geo": 0.015789473684210527
+        "w_geo": 0.011111111111111112
       }
     ],
     "total_fraudsters": 299

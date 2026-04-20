@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/ChartTooltip";
 import Panel from "@/components/ui/Panel";
 import type { Fraudster } from "@/lib/types";
-import { fmtGbpFromMinor } from "@/lib/gbpMinor";
+import { fmtGbpFromAmount } from "@/lib/gbpMinor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -162,7 +162,7 @@ function FraudsterDossierTable({
                     {comfortable ? f.full_id : f.id}
                   </td>
                   <td style={{ padding: pad, color: ink, verticalAlign: "top", whiteSpace: "nowrap" }}>{fmt(f.txns)}</td>
-                  <td style={{ padding: pad, fontWeight: 600, color: "#cf1322", verticalAlign: "top", whiteSpace: "nowrap" }}>{fmtGbpFromMinor(f.amount)}</td>
+                  <td style={{ padding: pad, fontWeight: 600, color: "#cf1322", verticalAlign: "top", whiteSpace: "nowrap" }}>{fmtGbpFromAmount(f.amount)}</td>
                   <td style={{ padding: pad, color: ink, verticalAlign: "top", whiteSpace: "nowrap" }}>
                     {f.types_used}/5
                   </td>
@@ -218,7 +218,7 @@ export default function FraudstersAuditBlock({
 
   const volByComposite = composite.map((f, i) => ({
     label: `#${i + 1}  ${f.id}`,
-    gbp: f.amount / 100,
+    gbp: f.amount,
   }));
   const scoreByComposite = composite.map((f, i) => ({
     label: `#${i + 1}  ${f.id}`,
@@ -228,8 +228,8 @@ export default function FraudstersAuditBlock({
     byAmount?.length && byAmount.length === composite.length
       ? composite.map((_, i) => ({
           rank: `#${i + 1}`,
-          naiveGbp: (byAmount[i]?.amount ?? 0) / 100,
-          compositeGbp: (composite[i]?.amount ?? 0) / 100,
+          naiveGbp: byAmount[i]?.amount ?? 0,
+          compositeGbp: composite[i]?.amount ?? 0,
         }))
       : null;
   const top1 = composite[0];
@@ -292,7 +292,7 @@ export default function FraudstersAuditBlock({
           <Panel
             title="Fraud volume by composite rank"
             description="Fraud-tagged £ (GBP) for each of the top 5 composite-ranked users."
-            methodology="Fraud £ = source AMOUNT ÷ 100. Bars follow composite order (#1 highest composite score), not naive £ order."
+            methodology="Fraud £ uses raw `AMOUNT` sums (same scale as executive fraud-loss KPIs). Bars follow composite order (#1 highest composite score), not naive £ order."
           >
             <div style={{ width: "100%", height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -322,7 +322,7 @@ export default function FraudstersAuditBlock({
                           <ChartTooltipRows>
                             <ChartTooltipRow
                               label="Fraud £"
-                              value={fmtGbpFromMinor(Math.round(payload[0].payload.gbp * 100))}
+                              value={fmtGbpFromAmount(Math.round(payload[0].payload.gbp))}
                               valueColor="#cf1322"
                             />
                           </ChartTooltipRows>

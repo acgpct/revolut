@@ -81,7 +81,9 @@ export interface Brief2b {
   // Per-user behavioural averages
   fraud_avg_txns_per_user: number;
   legit_avg_txns_per_user: number;
+  /** Mean distinct non-empty `MERCHANT_COUNTRY` values per user (blank / null rows excluded). */
   fraud_avg_countries: number;
+  /** Mean distinct non-empty `MERCHANT_COUNTRY` values per user (blank / null rows excluded). */
   legit_avg_countries: number;
   // Demographics
   fraud_avg_birth: number;
@@ -99,6 +101,7 @@ export interface Fraudster {
   id: string;
   full_id: string;
   txns: number;
+  /** Sum of fraud-labelled `AMOUNT` for this user — **same integer GBP scale** as `overview.fraud_amount`. Display with `fmtGbpFromAmount` (same rules as executive `fmtM`), not `fmtGbpFromMinor`. */
   amount: number;
   types_used: number;
   countries_hit: number;

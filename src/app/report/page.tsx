@@ -18,7 +18,7 @@ import type { Analytics } from "@/lib/types";
 import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 import { buildBrief2bMerchantMixRows, merchantMixToChartData } from "@/lib/brief2bMerchantChart";
 import FraudstersAuditBlock from "@/components/FraudstersAuditBlock";
-import { fmtGbpFromMinor } from "@/lib/gbpMinor";
+import { fmtGbpFromAmount } from "@/lib/gbpMinor";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt  = (n: number) => n.toLocaleString();
@@ -340,7 +340,7 @@ function ExecSummary({ d }: { d: Analytics }) {
     { n:"1", h:`Conversion gap of ${gap}pp`, b:`Marketing's ${brief1.marketing_rate}% counts fraudsters and non-card transactions. The correct rate — KYC-passed + ≥1 legitimate card payment — is ${brief1.revolut_rate}%.` },
     { n:"2", h:"Geographic risk is two-dimensional", b:`${hvCountry} leads by volume (${fmt(hvFraud)} cases, ${fmtM(hvAmt)}). ${hrCountry} carries the highest fraud rate (${hrRate}%) — 1 in ${hr1in} transactions. A single axis hides one threat. Globally, fraud losses split as merchant-facing (card + ATM): ${fmtM(mfLoss)} — geographic controls apply — vs platform (top-up + P2P + bank transfer): ${fmtM(pfLoss)} — velocity and behavioural controls apply.` },
     { n:"3", h:"KYC clearance ≠ legitimacy", b:`${fmt(d.brief2b.fraud_count)} fraud transactions came from KYC-passed users, over-indexing on ATM (+${atmDiff.toFixed(1)}pp) and bank transfers (+${bankDiff.toFixed(1)}pp).` },
-    { n:"4", h:`One actor: ${fmtGbpFromMinor(top1?.amount ?? 0)} across ${top1?.countries_hit ?? 0} countries`, b:`${top1?.full_id.slice(0,8) ?? "—"} executed ${fmt(top1?.txns ?? 0)} transactions across all ${top1?.types_used ?? 0} channels. Risk score ${(top1?.score ?? 0).toFixed(1)} — ${scoreRatio}× the second-ranked actor.` },
+    { n:"4", h:`One actor: ${fmtGbpFromAmount(top1?.amount ?? 0)} across ${top1?.countries_hit ?? 0} countries`, b:`${top1?.full_id.slice(0,8) ?? "—"} executed ${fmt(top1?.txns ?? 0)} transactions across all ${top1?.types_used ?? 0} channels. Risk score ${(top1?.score ?? 0).toFixed(1)} — ${scoreRatio}× the second-ranked actor.` },
   ];
 
   return (
@@ -700,7 +700,7 @@ function KYCPatterns({ d }: { d: Analytics }) {
   const lCard = brief2b.legit_type_pct["CARD_PAYMENT"] ?? 0;
   const medAmtDiff = fraudMed - legitMed;
   const cohortPatternRows = [
-    { label: "Median txn amount (fraud- vs legit-labelled txns)", f: fmtM(fraudMed), l: fmtM(legitMed), d: `${medAmtDiff >= 0 ? "+" : "−"}${fmtM(Math.abs(medAmtDiff))}` },
+    { label: "Median txn amount (fraud- vs legit-labelled txns)", f: fmtGbpFromAmount(fraudMed), l: fmtGbpFromAmount(legitMed), d: `${medAmtDiff >= 0 ? "+" : "−"}${fmtGbpFromAmount(Math.abs(medAmtDiff))}` },
     { label: "ATM share", f: `${fAtm}%`, l: `${lAtm}%`, d: `${(fAtm - lAtm) >= 0 ? "+" : ""}${(fAtm - lAtm).toFixed(1)}pp` },
     { label: "Top-up share", f: `${fTop}%`, l: `${lTop}%`, d: `${(fTop - lTop) >= 0 ? "+" : ""}${(fTop - lTop).toFixed(1)}pp` },
     { label: "Card payment share", f: `${fCard}%`, l: `${lCard}%`, d: `${(fCard - lCard) >= 0 ? "+" : ""}${(fCard - lCard).toFixed(1)}pp` },
@@ -963,7 +963,7 @@ function TopFraudsters({ d }: { d: Analytics }) {
   const top5 = bonus.top_fraudsters;
   const top1 = top5[0];
 
-  const amountGbp = top1 ? top1.amount / 100 : 0;
+  const amountGbp = top1 ? top1.amount : 0;
   const avgTxnGbp = top1 && top1.txns ? amountGbp / top1.txns : 0;
   const dailyRate   = top1 ? top1.txns / 180 : 0;
   const proj30dGbp  = top1 ? Math.round(dailyRate * 30 * avgTxnGbp) : 0;
@@ -979,7 +979,7 @@ function TopFraudsters({ d }: { d: Analytics }) {
           <>
             <p style={{ fontWeight: 700, color: INK, marginBottom: 6 }}>Composite score (fin_crime_audit.pdf)</p>
             <p style={{ margin: "0 0 10px", lineHeight: 1.6 }}>
-              0.35·fraud value + 0.30·fraud txn count + 0.15·user fraud rate + 0.10·type diversity + 0.10·country diversity — each input normalised 0–1 across all fraud actors. Displayed score is 0–100. Naive £ ranking is shown alongside for contrast. GBP = <code>AMOUNT</code> ÷ 100.
+              0.35·fraud value + 0.30·fraud txn count + 0.15·user fraud rate + 0.10·type diversity + 0.10·country diversity — each input normalised 0–1 across all fraud actors. Displayed score is 0–100. Naive £ ranking is shown alongside for contrast. Fraud £ uses raw <code>AMOUNT</code> sums (same scale as executive fraud-loss KPIs).
             </p>
             <p style={{ margin: 0, lineHeight: 1.6 }}>
               <strong>Context.</strong> Many stacks sort by lifetime loss — fine for reimbursement but underweight slow-burn actors who diversify across rails. The composite rewards persistence, user-level fraud rate, and breadth because those behaviours evade one-channel rules.
@@ -1001,8 +1001,8 @@ function TopFraudsters({ d }: { d: Analytics }) {
         <div style={{ marginTop: 10, padding: "8px 14px", borderLeft: `2px solid ${RED}`, background: "#fafafa" }}>
           <p style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: RED, marginBottom: 4 }}>30-Day Forward Projection</p>
           <Body>
-            At <strong style={{ color: INK }}>{top1.full_id.slice(0,8)}</strong>&apos;s current run rate of {fmt(top1.txns)} transactions generating {fmtGbpFromMinor(top1.amount)}, and assuming this dataset reflects a 6-month observation window (approximately {dailyRate.toFixed(1)} transactions per day at {fmtGbpFromMinor(Math.round(avgTxnGbp * 100))} average),{" "}
-            <strong style={{ color: RED }}>30 additional days without intervention projects {fmtGbpFromMinor(Math.round(proj30dGbp * 100))} in further exposure.</strong>{" "}
+            At <strong style={{ color: INK }}>{top1.full_id.slice(0,8)}</strong>&apos;s current run rate of {fmt(top1.txns)} transactions generating {fmtGbpFromAmount(top1.amount)}, and assuming this dataset reflects a 6-month observation window (approximately {dailyRate.toFixed(1)} transactions per day at {fmtGbpFromAmount(Math.round(avgTxnGbp))} average),{" "}
+            <strong style={{ color: RED }}>30 additional days without intervention projects {fmtGbpFromAmount(proj30dGbp)} in further exposure.</strong>{" "}
             With all {top1.types_used} transaction channels already active across {top1.countries_hit} countries, velocity — not footprint expansion — is the only remaining detection window.
           </Body>
         </div>
@@ -1071,7 +1071,7 @@ function Recommendations({ d }: { d: Analytics }) {
       title:"Immediate action + nightly composite scoring",
       body:`Suspend ${top1?.full_id.slice(0,8)} (${scoreRatio}× second-ranked) immediately. Run composite scoring nightly across all ${fmt(bonus.total_fraudsters)} actors to surface emerging high-risk profiles before losses compound. Elaboration: publish the score and its four inputs to investigators so overrides are auditable; refresh inputs when new rails or corridors launch so the model does not silently go stale.`,
       ev:`${top1?.full_id.slice(0,8)}: ${fmt(top1?.txns)} txns across ${top1?.countries_hit} countries.`,
-      cost:`Top 5 actors combined: ${fmtGbpFromMinor(top5Total)} at risk. Every day without nightly scoring is a day the ranked list goes un-actioned.`,
+      cost:`Top 5 actors combined: ${fmtGbpFromAmount(top5Total)} at risk. Every day without nightly scoring is a day the ranked list goes un-actioned.`,
     },
   ];
 
@@ -1130,7 +1130,7 @@ function OperatorLens({ d }: { d: Analytics }) {
   const kycFraudTotal = brief2b.fraud_count * brief2b.fraud_avg_amount;
   const top5Total     = bonus.top_fraudsters.reduce((s: number, f) => s + f.amount, 0);
   const top1          = bonus.top_fraudsters[0];
-  const avgTxnGbp     = top1 && top1.txns ? top1.amount / 100 / top1.txns : 0;
+  const avgTxnGbp     = top1 && top1.txns ? top1.amount / top1.txns : 0;
   const proj30dGbp    = top1 ? Math.round((top1.txns / 180) * 30 * avgTxnGbp) : 0;
 
   // 2×2 quadrant data  [ease: easy|hard, impact: high|low]
@@ -1140,7 +1140,7 @@ function OperatorLens({ d }: { d: Analytics }) {
       tag: "QUICK WIN · ACT TODAY",
       tagColor: INK,
       title: "REC 4 — Suspend Top Actors",
-      detail: `Top 5 actors: ${fmtGbpFromMinor(top5Total)} at risk. Actor suspension: hours. Nightly composite scoring: days.`,
+      detail: `Top 5 actors: ${fmtGbpFromAmount(top5Total)} at risk. Actor suspension: hours. Nightly composite scoring: days.`,
       border: INK,
       bg: "#fafafa",
     },
@@ -1227,8 +1227,8 @@ function OperatorLens({ d }: { d: Analytics }) {
       <div style={{ padding: "10px 14px", border: `1px solid ${RULE}`, borderLeft: `3px solid ${RED}`, marginBottom: 14 }}>
         <p style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: RED, marginBottom: 5 }}>Forward-Looking Exposure Model</p>
         <Body>
-          At <strong style={{ color: INK }}>{top1?.full_id.slice(0,8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtGbpFromMinor(top1?.amount ?? 0)}, and assuming a 6-month observation window (approximately {top1 ? (top1.txns/180).toFixed(1) : 0} transactions per day at {fmtGbpFromMinor(Math.round(avgTxnGbp * 100))} average),{" "}
-          <strong style={{ color: RED }}>30 additional days without intervention projects {fmtGbpFromMinor(Math.round(proj30dGbp * 100))} in further exposure.</strong>{" "}
+          At <strong style={{ color: INK }}>{top1?.full_id.slice(0,8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtGbpFromAmount(top1?.amount ?? 0)}, and assuming a 6-month observation window (approximately {top1 ? (top1.txns/180).toFixed(1) : 0} transactions per day at {fmtGbpFromAmount(Math.round(avgTxnGbp))} average),{" "}
+          <strong style={{ color: RED }}>30 additional days without intervention projects {fmtGbpFromAmount(proj30dGbp)} in further exposure.</strong>{" "}
           Risk compounds in real time: each detection cycle that passes without nightly scoring is a window where ranked actors continue operating unimpeded. The priority matrix above exists precisely to collapse that window.
         </Body>
       </div>

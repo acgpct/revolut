@@ -163,7 +163,8 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   for (const r of kycFraudTxns) {
     if (!kycFraudPerUser[r.user_id]) kycFraudPerUser[r.user_id] = { txns: 0, countries: new Set(), birth: r.birth_year };
     kycFraudPerUser[r.user_id].txns++;
-    kycFraudPerUser[r.user_id].countries.add(r.merchant_country);
+    const mc = (r.merchant_country ?? "").trim();
+    if (mc !== "") kycFraudPerUser[r.user_id].countries.add(mc);
   }
   const kycFraudUserList = Object.values(kycFraudPerUser);
 
@@ -172,7 +173,8 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   for (const r of kycLegitTxns) {
     if (!kycLegitPerUser[r.user_id]) kycLegitPerUser[r.user_id] = { txns: 0, countries: new Set(), birth: r.birth_year };
     kycLegitPerUser[r.user_id].txns++;
-    kycLegitPerUser[r.user_id].countries.add(r.merchant_country);
+    const mc = (r.merchant_country ?? "").trim();
+    if (mc !== "") kycLegitPerUser[r.user_id].countries.add(mc);
   }
   const kycLegitUserList = Object.values(kycLegitPerUser);
 
@@ -235,7 +237,8 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
     userFraud[r.user_id].txns++;
     userFraud[r.user_id].amount += r.amount;
     userFraud[r.user_id].types[r.type] = (userFraud[r.user_id].types[r.type] || 0) + 1;
-    userFraud[r.user_id].countries.add(r.merchant_country);
+    const mcF = (r.merchant_country ?? "").trim();
+    if (mcF !== "") userFraud[r.user_id].countries.add(mcF);
     if ((KYC_PRIORITY[r.kyc] ?? 0) > (KYC_PRIORITY[userFraud[r.user_id].kyc] ?? 0))
       userFraud[r.user_id].kyc = r.kyc;
   }

@@ -4,6 +4,7 @@ import type { Analytics } from "@/lib/types";
 import MethodHint from "@/components/ui/MethodHint";
 import { pageSubtitleParagraphStyle } from "@/components/ui/pageSubtitle";
 import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
+import { fmtGbpFromAmount } from "@/lib/gbpMinor";
 
 const fmt  = (n: number) => n.toLocaleString();
 const fmtM = (n: number) => {
@@ -22,8 +23,11 @@ export default function OperatorPage({ data }: Props) {
   const kycFraudTotal = brief2b.fraud_count * brief2b.fraud_avg_amount;
   const top5Total     = bonus.top_fraudsters.reduce((s, f) => s + f.amount, 0);
   const top1          = bonus.top_fraudsters[0];
-  const avgTxnVal     = top1 ? top1.amount / top1.txns : 0;
-  const proj30d       = Math.round((top1 ? top1.txns / 180 : 0) * 30 * avgTxnVal);
+  const amountGbp     = top1 ? top1.amount : 0;
+  const avgTxnGbp     = top1 && top1.txns ? amountGbp / top1.txns : 0;
+  const dailyRate     = top1 ? top1.txns / 180 : 0;
+  /** Same 6-mo window projection as the PDF report: `dailyRate × 30 × avgTxn` in raw `AMOUNT` units (GBP). */
+  const proj30dGbp    = top1 ? Math.round(dailyRate * 30 * avgTxnGbp) : 0;
   const topRate       = [...brief2a.geo_risk].sort((a, b) => b.rate - a.rate)[0];
 
   const quadrants = [
@@ -32,7 +36,7 @@ export default function OperatorPage({ data }: Props) {
       tag: "QUICK WIN · ACT TODAY",
       tagBg: "#0f0f0f", tagText: "#ffffff",
       title: "REC 4 — Suspend Top Actors + Nightly Scoring",
-      value: fmtM(Math.round(top5Total)),
+      value: fmtGbpFromAmount(Math.round(top5Total)),
       sub: "top-5 actors combined at risk",
       detail: "Actor suspension requires hours. Nightly composite scoring: days to ship. Highest immediacy.",
       border: "#0f0f0f", bg: "#ffffff",
@@ -176,8 +180,8 @@ export default function OperatorPage({ data }: Props) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
           {[
             { label: "Current run rate",       value: fmt(top1?.txns ?? 0),          sub: "transactions observed (est. 6-mo window)" },
-            { label: "Avg transaction value",  value: fmtM(Math.round(avgTxnVal)),   sub: `per transaction — dc283b17` },
-            { label: "30-day projected loss",  value: fmtM(proj30d),                 sub: "if undetected for 30 more days", red: true },
+            { label: "Avg transaction value",  value: top1 ? fmtGbpFromAmount(Math.round(top1.amount / top1.txns)) : "—",   sub: "per fraud-labelled transaction (mean AMOUNT)" },
+            { label: "30-day projected loss",  value: fmtGbpFromAmount(proj30dGbp), sub: "if undetected for 30 more days", red: true },
           ].map(s => (
             <div key={s.label} style={{ border: `1px solid ${s.red ? "#fde8e8" : "#ebebeb"}`, borderRadius: 14, padding: "24px 28px", background: s.red ? "#fff8f8" : "#fafafa" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: s.red ? "#cf1322" : "#a3a3a3", marginBottom: 10 }}>{s.label}</p>
@@ -188,8 +192,8 @@ export default function OperatorPage({ data }: Props) {
         </div>
         <div style={{ padding: "20px 24px", background: "#f9f9f9", border: "1px solid #ebebeb", borderLeft: "3px solid #cf1322", borderRadius: "0 12px 12px 0" }}>
           <p style={{ fontSize: 14, color: "#404040", lineHeight: 1.7 }}>
-            At <strong style={{ color: "#0f0f0f" }}>{top1?.full_id.slice(0, 8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtM(top1?.amount ?? 0)}, and assuming a 6-month observation window (approximately {top1 ? (top1.txns / 180).toFixed(1) : 0} transactions per day at {fmtM(Math.round(avgTxnVal))} average),{" "}
-            <strong style={{ color: "#cf1322" }}>30 additional days without intervention projects {fmtM(proj30d)} in further exposure.</strong>{" "}
+            At <strong style={{ color: "#0f0f0f" }}>{top1?.full_id.slice(0, 8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtGbpFromAmount(top1?.amount ?? 0)}, and assuming a 6-month observation window (approximately {top1 ? (top1.txns / 180).toFixed(1) : 0} transactions per day at {top1 ? fmtGbpFromAmount(Math.round(top1.amount / top1.txns)) : "—"} average),{" "}
+            <strong style={{ color: "#cf1322" }}>30 additional days without intervention projects {fmtGbpFromAmount(proj30dGbp)} in further exposure.</strong>{" "}
             With all {top1?.types_used} transaction channels active across {top1?.countries_hit} countries, velocity — not footprint expansion — is the only remaining detection window. Risk compounds in real time: each detection cycle that passes without nightly scoring is a window where ranked actors continue operating unimpeded.
           </p>
         </div>
@@ -223,8 +227,8 @@ export default function OperatorPage({ data }: Props) {
             {
               tag: "REC 4",
               title: "Immediate action + nightly composite scoring",
-              cost: `${fmtM(Math.round(top5Total))} top-5 combined at risk`,
-              detail: `Every day without nightly composite scoring is a day the ranked list goes un-actioned. The #1 actor alone: ${fmtM(top1?.amount ?? 0)}.`,
+              cost: `${fmtGbpFromAmount(Math.round(top5Total))} top-5 combined at risk`,
+              detail: `Every day without nightly composite scoring is a day the ranked list goes un-actioned. The #1 actor alone: ${fmtGbpFromAmount(top1?.amount ?? 0)}.`,
             },
           ].map((r, i) => (
             <div key={r.tag} style={{

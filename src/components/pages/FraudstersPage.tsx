@@ -4,7 +4,7 @@ import FraudstersAuditBlock from "@/components/FraudstersAuditBlock";
 import MetricCard from "@/components/ui/MetricCard";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Fraudster } from "@/lib/types";
-import { fmtGbpFromMinor } from "@/lib/gbpMinor";
+import { fmtGbpFromAmount } from "@/lib/gbpMinor";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -56,7 +56,7 @@ export default function FraudstersPage({
         />
         <MetricCard
           label="#1 fraud volume"
-          value={top ? fmtGbpFromMinor(top.amount) : "—"}
+          value={top ? fmtGbpFromAmount(top.amount) : "—"}
           sub="same actor as top composite row"
           badgeVariant="red"
         />
