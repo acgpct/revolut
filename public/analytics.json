@@ -6,7 +6,14 @@
     "total_amount": 21847968661,
     "fraud_amount": 428393579,
     "unique_users": 8021,
-    "fraud_amount_pct": 1.96
+    "fraud_amount_pct": 1.96,
+    "total_amount_gbp_fiat": 5375690879,
+    "fraud_amount_gbp_fiat": 407224979,
+    "fraud_amount_pct_gbp_fiat": 7.58,
+    "fx_rates_as_of_utc": "Mon, 20 Apr 2026 00:02:31 +0000",
+    "txn_rows_fiat_in_gbp": 687996,
+    "txn_rows_crypto_excluded": 655,
+    "txn_rows_unknown_currency": 0
   },
   "brief1": {
     "unique_users": 8021,
@@ -14,13 +21,16 @@
     "kyc_passed_users": 6989,
     "topup_users": 7764,
     "card_users": 5789,
+    "card_or_bank_users": 6342,
     "legit_card_users": 5568,
     "strict_converted_users": 5263,
     "not_true_converted_users": 2758,
+    "marketing_implied_users": 6257,
+    "ghost_users_vs_marketing_claim": 994,
     "spending_users": 0,
     "converted_users": 0,
     "revolut_converted_users": 5263,
-    "marketing_rate": 79.21,
+    "marketing_rate": 78,
     "strict_rate": 65.62,
     "revolut_rate": 65.62,
     "txn_types": [
@@ -60,14 +70,6 @@
         "rate": 4.54,
         "fraud_amount": 101377935,
         "total_amount": 1739993427
-      },
-      {
-        "country": "Unknown / Null",
-        "total": 205578,
-        "fraud": 5464,
-        "rate": 2.66,
-        "fraud_amount": 260703670,
-        "total_amount": 11298607792
       },
       {
         "country": "IRL",
@@ -1006,6 +1008,312 @@
         "total_amount": 16505873
       }
     ],
+    "geo_risk_user_country": [
+      {
+        "country": "GB",
+        "total": 385343,
+        "fraud": 13088,
+        "rate": 3.4,
+        "fraud_amount": 382196099,
+        "total_amount": 13624184887
+      },
+      {
+        "country": "DE",
+        "total": 9012,
+        "fraud": 508,
+        "rate": 5.64,
+        "fraud_amount": 2950255,
+        "total_amount": 117498392
+      },
+      {
+        "country": "PL",
+        "total": 25725,
+        "fraud": 347,
+        "rate": 1.35,
+        "fraud_amount": 16774942,
+        "total_amount": 634390448
+      },
+      {
+        "country": "FR",
+        "total": 60184,
+        "fraud": 208,
+        "rate": 0.35,
+        "fraud_amount": 4371049,
+        "total_amount": 1047295847
+      },
+      {
+        "country": "ES",
+        "total": 19510,
+        "fraud": 157,
+        "rate": 0.8,
+        "fraud_amount": 18480301,
+        "total_amount": 262858343
+      },
+      {
+        "country": "LT",
+        "total": 50725,
+        "fraud": 157,
+        "rate": 0.31,
+        "fraud_amount": 874261,
+        "total_amount": 511558837
+      },
+      {
+        "country": "RO",
+        "total": 6903,
+        "fraud": 58,
+        "rate": 0.84,
+        "fraud_amount": 2406202,
+        "total_amount": 152651998
+      },
+      {
+        "country": "CZ",
+        "total": 2265,
+        "fraud": 11,
+        "rate": 0.49,
+        "fraud_amount": 138081,
+        "total_amount": 205552560
+      },
+      {
+        "country": "NL",
+        "total": 6102,
+        "fraud": 5,
+        "rate": 0.08,
+        "fraud_amount": 88303,
+        "total_amount": 117064668
+      },
+      {
+        "country": "BE",
+        "total": 2919,
+        "fraud": 4,
+        "rate": 0.14,
+        "fraud_amount": 114086,
+        "total_amount": 38611178
+      },
+      {
+        "country": "GR",
+        "total": 8458,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 146710869
+      },
+      {
+        "country": "IT",
+        "total": 4973,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 49244642
+      },
+      {
+        "country": "JE",
+        "total": 626,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 3786330
+      },
+      {
+        "country": "RU",
+        "total": 737,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 14910205
+      },
+      {
+        "country": "US",
+        "total": 86,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 813126
+      },
+      {
+        "country": "MV",
+        "total": 168,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 1500915
+      },
+      {
+        "country": "CH",
+        "total": 6485,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 290617657
+      },
+      {
+        "country": "LV",
+        "total": 8526,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 211824795
+      },
+      {
+        "country": "IE",
+        "total": 44731,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 479304032
+      },
+      {
+        "country": "SK",
+        "total": 3280,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 13509251
+      },
+      {
+        "country": "PT",
+        "total": 8402,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 95800370
+      },
+      {
+        "country": "FI",
+        "total": 1302,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 10290807
+      },
+      {
+        "country": "SE",
+        "total": 1118,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 107247345
+      },
+      {
+        "country": "GG",
+        "total": 148,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2368287
+      },
+      {
+        "country": "HU",
+        "total": 3286,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 2972172951
+      },
+      {
+        "country": "SI",
+        "total": 3034,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 19885672
+      },
+      {
+        "country": "CY",
+        "total": 4278,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 228276910
+      },
+      {
+        "country": "GI",
+        "total": 4473,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 68435351
+      },
+      {
+        "country": "BG",
+        "total": 1527,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 14444308
+      },
+      {
+        "country": "EE",
+        "total": 3830,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 106969210
+      },
+      {
+        "country": "DK",
+        "total": 1910,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 82554571
+      },
+      {
+        "country": "AT",
+        "total": 965,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 16027025
+      },
+      {
+        "country": "LU",
+        "total": 594,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 3819720
+      },
+      {
+        "country": "HR",
+        "total": 871,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 5100361
+      },
+      {
+        "country": "NO",
+        "total": 2180,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 144827268
+      },
+      {
+        "country": "MT",
+        "total": 3632,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 29543418
+      },
+      {
+        "country": "IS",
+        "total": 103,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 14915641
+      },
+      {
+        "country": "GP",
+        "total": 75,
+        "fraud": 0,
+        "rate": 0,
+        "fraud_amount": 0,
+        "total_amount": 456260
+      }
+    ],
     "fraud_amount_merchant_facing": 167767113,
     "fraud_amount_platform": 260626466
   },
@@ -1123,7 +1431,158 @@
         "txns": 18042,
         "pct": 2.71
       }
-    ]
+    ],
+    "fraud_amount_kyc_passed_cohort": 333624589,
+    "fraud_amount_kyc_passed_cohort_gbp_fiat": 313119420,
+    "fraud_txns_kyc_passed_cohort_fiat_gbp": 12308,
+    "pending_fraud_outlier_user_id": "dc283b17-bbe1-4ae9-a11c-0029d5ae71d9",
+    "pending_fraud_txns_from_outlier": 1029,
+    "pending_total_txns_from_outlier": 1029,
+    "pending_fraud_rate_ex_outlier": 44.52,
+    "kyc_fraud_archetypes": [
+      {
+        "id": "card_first",
+        "label": "Card-first / tester",
+        "users": 69,
+        "fraud_txns": 6962,
+        "pct_users": 26.54,
+        "pct_fraud_txns": 56.56
+      },
+      {
+        "id": "topup_atm",
+        "label": "Top-up / ATM cash-out",
+        "users": 163,
+        "fraud_txns": 4636,
+        "pct_users": 62.69,
+        "pct_fraud_txns": 37.66
+      },
+      {
+        "id": "mixed",
+        "label": "Multi-rail / mixed",
+        "users": 25,
+        "fraud_txns": 678,
+        "pct_users": 9.62,
+        "pct_fraud_txns": 5.51
+      },
+      {
+        "id": "bank_transfer",
+        "label": "Bank-transfer extractor",
+        "users": 3,
+        "fraud_txns": 34,
+        "pct_users": 1.15,
+        "pct_fraud_txns": 0.28
+      }
+    ],
+    "kyc_fraud_row_order_tertile_fraud_share_pct": [
+      31.75,
+      44.52,
+      23.74
+    ],
+    "kyc_fraud_median_row_order_norm": 0.5,
+    "kyc_legit_median_row_order_norm": 0.5,
+    "kyc_fraud_type_merchant_heatmap": {
+      "row_labels": [
+        "CARD_PAYMENT",
+        "TOPUP",
+        "ATM",
+        "BANK_TRANSFER",
+        "P2P"
+      ],
+      "col_labels": [
+        "GBR",
+        "—",
+        "POL",
+        "USA",
+        "NLD",
+        "NOR",
+        "LTU",
+        "IRL"
+      ],
+      "matrix": [
+        [
+          3797,
+          5,
+          227,
+          192,
+          200,
+          178,
+          156,
+          164
+        ],
+        [
+          0,
+          3249,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1764,
+          1,
+          55,
+          21,
+          0,
+          6,
+          22,
+          0
+        ],
+        [
+          0,
+          1112,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          307,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "rec3_rule_flagged_users": 136,
+    "rec3_rule_scope_fraud_txns": 4209,
+    "rec3_rule_scope_fraud_txns_fiat_gbp": 4209,
+    "replication": {
+      "version": 1,
+      "rec3_counterfactual": {
+        "user_universe": "Distinct USER_ID values in the Brief 2B fraud cohort: KYC-passed (max-priority user status = PASSED) AND at least one fraud-labelled row (IS_FRAUD = True) anywhere in the extract. Same count as brief2b.kyc_fraud_users.",
+        "per_user_row_set": "All extract rows whose USER_ID equals that user AND the user is in the fraud cohort universe. Implemented as every transaction row for users in kyc_fraud_users — includes both fraud-labelled and legitimate-labelled rows for those users (not fraud-labelled rows only).",
+        "t_definition": "T = number of rows in the per_user_row_set (every TYPE in the extract for that user while classified in this cohort).",
+        "p_atm": "count(rows with TYPE = ATM) / T",
+        "p_bank_transfer": "count(rows with TYPE = BANK_TRANSFER) / T",
+        "p_card_payment": "count(rows with TYPE = CARD_PAYMENT) / T — P2P is NOT included in this numerator or denominator.",
+        "signal_atm": "true iff p_atm > 0.25 (strict greater-than, not ≥).",
+        "signal_bank_transfer": "true iff p_bank_transfer > 0.15 (strict >, not ≥).",
+        "signal_card_low": "true iff p_card_payment < 0.45 (strict <, not ≤).",
+        "user_flagged": "true iff (signal_atm ? 1 : 0) + (signal_bank_transfer ? 1 : 0) + (signal_card_low ? 1 : 0) ≥ 2.",
+        "rec3_rule_flagged_users": "Count of user_universe members with user_flagged true.",
+        "rec3_rule_scope_fraud_txns": "Count of fraud-labelled rows (IS_FRAUD True) among kycFraudFraudTxns whose USER_ID is flagged.",
+        "rec3_rule_scope_fraud_txns_fiat_gbp": "Subset of those rows with a successful fiat→GBP conversion (same FX/crypto exclusions as overview fraud GBP)."
+      },
+      "actor_archetypes": {
+        "user_universe": "Same as rec3_counterfactual.user_universe.",
+        "per_user_row_set": "Same as rec3_counterfactual.per_user_row_set (all cohort txns for the user).",
+        "t_definition": "Same T as counterfactual.",
+        "p_type": "For any TYPE string: count(rows with that TYPE) / T.",
+        "axis_topup_atm": "p(TOPUP) + p(ATM) — summed channel shares, single scalar.",
+        "axis_bank_transfer": "p(BANK_TRANSFER)",
+        "axis_card_first": "p(CARD_PAYMENT) + 0.5 × p(P2P)",
+        "assignment": "Form three candidates (topup_atm, bank_transfer, card_first) with scores = the three axis values above. Sort candidates by score descending. Let best = highest score, second = next. If best < 0.15 OR (best − second) < 0.04, assign archetype mixed. Otherwise assign the id of the highest-scoring candidate. (This is NOT a 50% dominance rule; it is a 15% floor on the winning composite score and a 4 percentage-point minimum lead on the 0–1 scale.)",
+        "fraud_txn_counts": "After each user has an archetype id, fraud_txns per row counts only kycFraudFraudTxns (fraud-labelled rows in the cohort) grouped by that user's archetype."
+      }
+    }
   },
   "kyc_status": {
     "PASSED": 677781,
@@ -1180,6 +1639,7 @@
         "full_id": "dc283b17-bbe1-4ae9-a11c-0029d5ae71d9",
         "txns": 1029,
         "amount": 60986488,
+        "amount_gbp_fiat": 60986157,
         "types_used": 5,
         "countries_hit": 11,
         "kyc": "PENDING",
@@ -1202,6 +1662,7 @@
         "full_id": "6eb51e3f-6e8b-45ee-bf01-82495df9c930",
         "txns": 590,
         "amount": 3918984,
+        "amount_gbp_fiat": 2659352,
         "types_used": 4,
         "countries_hit": 18,
         "kyc": "PASSED",
@@ -1223,6 +1684,7 @@
         "full_id": "4ee8690a-ebf7-435b-9fe2-103e8f83edc6",
         "txns": 508,
         "amount": 2950255,
+        "amount_gbp_fiat": 2820910,
         "types_used": 5,
         "countries_hit": 8,
         "kyc": "PASSED",
@@ -1245,6 +1707,7 @@
         "full_id": "b8271606-4633-4d8f-8729-a2c8ebb8a49f",
         "txns": 340,
         "amount": 11827642,
+        "amount_gbp_fiat": 4523384,
         "types_used": 5,
         "countries_hit": 3,
         "kyc": "PASSED",
@@ -1267,6 +1730,7 @@
         "full_id": "25c2ecb3-5ec7-4fa6-8fc3-bbcf3a691217",
         "txns": 460,
         "amount": 3620232,
+        "amount_gbp_fiat": 3620232,
         "types_used": 5,
         "countries_hit": 5,
         "kyc": "PASSED",
@@ -1291,6 +1755,7 @@
         "full_id": "dc283b17-bbe1-4ae9-a11c-0029d5ae71d9",
         "txns": 1029,
         "amount": 60986488,
+        "amount_gbp_fiat": 60986157,
         "types_used": 5,
         "countries_hit": 11,
         "kyc": "PENDING",
@@ -1313,6 +1778,7 @@
         "full_id": "310667d1-92c6-4fc7-83f1-55b61773ace5",
         "txns": 60,
         "amount": 13460553,
+        "amount_gbp_fiat": 11821395,
         "types_used": 4,
         "countries_hit": 2,
         "kyc": "PASSED",
@@ -1334,6 +1800,7 @@
         "full_id": "2182c140-9de3-4afc-90c1-cbce1ead4238",
         "txns": 14,
         "amount": 11910750,
+        "amount_gbp_fiat": 3525165,
         "types_used": 2,
         "countries_hit": 0,
         "kyc": "PASSED",
@@ -1353,6 +1820,7 @@
         "full_id": "b8271606-4633-4d8f-8729-a2c8ebb8a49f",
         "txns": 340,
         "amount": 11827642,
+        "amount_gbp_fiat": 4523384,
         "types_used": 5,
         "countries_hit": 3,
         "kyc": "PASSED",
@@ -1375,6 +1843,7 @@
         "full_id": "2ba04c04-64a4-48f9-8f50-896f573a0845",
         "txns": 200,
         "amount": 6107270,
+        "amount_gbp_fiat": 6107270,
         "types_used": 5,
         "countries_hit": 2,
         "kyc": "PASSED",

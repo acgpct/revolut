@@ -16,13 +16,18 @@ type Props = {
   children: ReactNode;
   /** Short label for the trigger (aria + visible). */
   label?: string;
+  /**
+   * `icon` — small circle with “i” (dashboard).
+   * `text` — discrete “Method” chip (print/PDF reports: avoids odd italic glyph next to titles).
+   */
+  trigger?: "icon" | "text";
 };
 
 /**
  * Compact “method” trigger: full methodology lives in a hover/focus portal tooltip
  * so section bodies can stay context + recommendations only.
  */
-export default function MethodHint({ children, label = "Method" }: Props) {
+export default function MethodHint({ children, label = "Method", trigger = "icon" }: Props) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -86,6 +91,9 @@ export default function MethodHint({ children, label = "Method" }: Props) {
               borderRadius: 12,
               boxShadow: "0 12px 40px rgba(15, 15, 15, 0.14)",
               zIndex: 10000,
+              fontFamily:
+                'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif',
+              WebkitFontSmoothing: "antialiased",
             }}
           >
             <p
@@ -110,6 +118,8 @@ export default function MethodHint({ children, label = "Method" }: Props) {
         )
       : null;
 
+  const isText = trigger === "text";
+
   return (
     <>
       <button
@@ -127,24 +137,47 @@ export default function MethodHint({ children, label = "Method" }: Props) {
           requestAnimationFrame(updatePos);
         }}
         onMouseLeave={scheduleClose}
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 9999,
-          border: "1px solid #e5e5e5",
-          background: "#fafafa",
-          color: "#737373",
-          fontSize: 11,
-          fontWeight: 700,
-          fontStyle: "italic",
-          cursor: "pointer",
-          lineHeight: 1,
-          padding: 0,
-          flexShrink: 0,
-          verticalAlign: "middle",
-        }}
+        style={
+          isText
+            ? {
+                height: 22,
+                minWidth: 52,
+                padding: "0 10px",
+                borderRadius: 4,
+                border: "1px solid #e5e5e5",
+                background: "#ffffff",
+                color: "#525252",
+                fontSize: 8,
+                fontWeight: 600,
+                fontStyle: "normal",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                fontFamily: "inherit",
+                cursor: "pointer",
+                lineHeight: 1,
+                flexShrink: 0,
+                verticalAlign: "middle",
+                boxSizing: "border-box",
+              }
+            : {
+                width: 22,
+                height: 22,
+                borderRadius: 9999,
+                border: "1px solid #e5e5e5",
+                background: "#fafafa",
+                color: "#737373",
+                fontSize: 11,
+                fontWeight: 700,
+                fontStyle: "italic",
+                cursor: "pointer",
+                lineHeight: 1,
+                padding: 0,
+                flexShrink: 0,
+                verticalAlign: "middle",
+              }
+        }
       >
-        i
+        {isText ? label : "i"}
       </button>
       {tip}
     </>

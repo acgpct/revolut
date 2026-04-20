@@ -87,6 +87,10 @@ html, body {
 }
 
 /* MethodHint portal body — consistent spacing for methodology copy */
+.method-hint-rich {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
 .method-hint-rich p {
   margin: 0 0 10px;
 }
@@ -103,4 +107,10 @@ html, body {
 }
 .method-hint-rich strong {
   color: #171717;
+}
+
+/* PDF / print report: system UI reads more evenly in Save-as-PDF than a single loaded webfont */
+.report-doc {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
 }

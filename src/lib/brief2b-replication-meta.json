@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "rec3_counterfactual": {
+    "user_universe": "Distinct USER_ID values in the Brief 2B fraud cohort: KYC-passed (max-priority user status = PASSED) AND at least one fraud-labelled row (IS_FRAUD = True) anywhere in the extract. Same count as brief2b.kyc_fraud_users.",
+    "per_user_row_set": "All extract rows whose USER_ID equals that user AND the user is in the fraud cohort universe. Implemented as every transaction row for users in kyc_fraud_users — includes both fraud-labelled and legitimate-labelled rows for those users (not fraud-labelled rows only).",
+    "t_definition": "T = number of rows in the per_user_row_set (every TYPE in the extract for that user while classified in this cohort).",
+    "p_atm": "count(rows with TYPE = ATM) / T",
+    "p_bank_transfer": "count(rows with TYPE = BANK_TRANSFER) / T",
+    "p_card_payment": "count(rows with TYPE = CARD_PAYMENT) / T — P2P is NOT included in this numerator or denominator.",
+    "signal_atm": "true iff p_atm > 0.25 (strict greater-than, not ≥).",
+    "signal_bank_transfer": "true iff p_bank_transfer > 0.15 (strict >, not ≥).",
+    "signal_card_low": "true iff p_card_payment < 0.45 (strict <, not ≤).",
+    "user_flagged": "true iff (signal_atm ? 1 : 0) + (signal_bank_transfer ? 1 : 0) + (signal_card_low ? 1 : 0) ≥ 2.",
+    "rec3_rule_flagged_users": "Count of user_universe members with user_flagged true.",
+    "rec3_rule_scope_fraud_txns": "Count of fraud-labelled rows (IS_FRAUD True) among kycFraudFraudTxns whose USER_ID is flagged.",
+    "rec3_rule_scope_fraud_txns_fiat_gbp": "Subset of those rows with a successful fiat→GBP conversion (same FX/crypto exclusions as overview fraud GBP)."
+  },
+  "actor_archetypes": {
+    "user_universe": "Same as rec3_counterfactual.user_universe.",
+    "per_user_row_set": "Same as rec3_counterfactual.per_user_row_set (all cohort txns for the user).",
+    "t_definition": "Same T as counterfactual.",
+    "p_type": "For any TYPE string: count(rows with that TYPE) / T.",
+    "axis_topup_atm": "p(TOPUP) + p(ATM) — summed channel shares, single scalar.",
+    "axis_bank_transfer": "p(BANK_TRANSFER)",
+    "axis_card_first": "p(CARD_PAYMENT) + 0.5 × p(P2P)",
+    "assignment": "Form three candidates (topup_atm, bank_transfer, card_first) with scores = the three axis values above. Sort candidates by score descending. Let best = highest score, second = next. If best < 0.15 OR (best − second) < 0.04, assign archetype mixed. Otherwise assign the id of the highest-scoring candidate. (This is NOT a 50% dominance rule; it is a 15% floor on the winning composite score and a 4 percentage-point minimum lead on the 0–1 scale.)",
+    "fraud_txn_counts": "After each user has an archetype id, fraud_txns per row counts only kycFraudFraudTxns (fraud-labelled rows in the cohort) grouped by that user's archetype."
+  }
+}

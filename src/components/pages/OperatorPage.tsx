@@ -3,8 +3,8 @@
 import type { Analytics } from "@/lib/types";
 import MethodHint from "@/components/ui/MethodHint";
 import { pageSubtitleParagraphStyle } from "@/components/ui/pageSubtitle";
-import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
-import { fmtGbpFromAmount } from "@/lib/gbpMinor";
+import { ghostUsersVsMarketingClaim } from "@/lib/brief1Metrics";
+import { fmtGbpFromAmount, fmtRawAmountMajor } from "@/lib/gbpMinor";
 
 const fmt  = (n: number) => n.toLocaleString();
 const fmtM = (n: number) => {
@@ -19,15 +19,31 @@ interface Props { data: Analytics }
 export default function OperatorPage({ data }: Props) {
   const { brief1, brief2b, bonus, brief2a } = data;
 
-  const ghostUsers    = notTrueConvertedUserCount(brief1);
-  const kycFraudTotal = brief2b.fraud_count * brief2b.fraud_avg_amount;
+  const ghostMkt      = ghostUsersVsMarketingClaim(brief1);
+  const kycFraudTotal = brief2b.fraud_amount_kyc_passed_cohort ?? brief2b.fraud_count * brief2b.fraud_avg_amount;
+  const kycFraudFiat = brief2b.fraud_amount_kyc_passed_cohort_gbp_fiat;
+  const kycRec3Display = typeof kycFraudFiat === "number" ? Math.round(kycFraudFiat) : Math.round(kycFraudTotal);
+  const kycFiatTxnN = brief2b.fraud_txns_kyc_passed_cohort_fiat_gbp;
+  const kycRec3Mean =
+    typeof kycFraudFiat === "number" && typeof kycFiatTxnN === "number" && kycFiatTxnN > 0
+      ? Math.round(kycFraudFiat / kycFiatTxnN)
+      : typeof kycFraudFiat === "number" && brief2b.fraud_count > 0
+        ? Math.round(kycFraudFiat / brief2b.fraud_count)
+        : brief2b.fraud_avg_amount;
+  const kycRec3FiatTxnLabel =
+    typeof kycFiatTxnN === "number" ? fmt(kycFiatTxnN) : fmt(brief2b.fraud_count);
   const top5Total     = bonus.top_fraudsters.reduce((s, f) => s + f.amount, 0);
+  const top5FiatTotal =
+    bonus.top_fraudsters.length > 0 && bonus.top_fraudsters.every((f) => typeof f.amount_gbp_fiat === "number")
+      ? bonus.top_fraudsters.reduce((s, f) => s + (f.amount_gbp_fiat as number), 0)
+      : null;
   const top1          = bonus.top_fraudsters[0];
   const amountGbp     = top1 ? top1.amount : 0;
   const avgTxnGbp     = top1 && top1.txns ? amountGbp / top1.txns : 0;
   const dailyRate     = top1 ? top1.txns / 180 : 0;
   /** Same 6-mo window projection as the PDF report: `dailyRate × 30 × avgTxn` in raw `AMOUNT` units (GBP). */
   const proj30dGbp    = top1 ? Math.round(dailyRate * 30 * avgTxnGbp) : 0;
+  const proj30dSens   = top1 ? Math.round(dailyRate * 2 * 30 * avgTxnGbp) : 0;
   const topRate       = [...brief2a.geo_risk].sort((a, b) => b.rate - a.rate)[0];
 
   const quadrants = [
@@ -36,8 +52,11 @@ export default function OperatorPage({ data }: Props) {
       tag: "QUICK WIN · ACT TODAY",
       tagBg: "#0f0f0f", tagText: "#ffffff",
       title: "REC 4 — Suspend Top Actors + Nightly Scoring",
-      value: fmtGbpFromAmount(Math.round(top5Total)),
-      sub: "top-5 actors combined at risk",
+      value: top5FiatTotal != null ? fmtM(Math.round(top5FiatTotal)) : fmtGbpFromAmount(Math.round(top5Total)),
+      sub:
+        top5FiatTotal != null
+          ? `fiat GBP (raw AMOUNT ${fmtGbpFromAmount(Math.round(top5Total))})`
+          : "top-5 actors combined at risk",
       detail: "Actor suspension requires hours. Nightly composite scoring: days to ship. Highest immediacy.",
       border: "#0f0f0f", bg: "#ffffff",
     },
@@ -46,8 +65,8 @@ export default function OperatorPage({ data }: Props) {
       tag: "STRATEGIC BET · 3–6 MONTHS",
       tagBg: "#fff1f0", tagText: "#cf1322",
       title: "REC 3 — Behavioural Rule Engine on KYC",
-      value: fmtM(Math.round(kycFraudTotal)),
-      sub: "addressable KYC-bypass fraud",
+      value: fmtM(kycRec3Display),
+      sub: typeof kycFraudFiat === "number" ? "addressable KYC-bypass fraud (fiat GBP)" : "addressable KYC-bypass fraud",
       detail: "Rules pipeline + real-time monitoring infra. Highest financial leverage of any recommendation.",
       border: "#cf1322", bg: "#fffafa",
     },
@@ -57,7 +76,7 @@ export default function OperatorPage({ data }: Props) {
       tagBg: "#f5f5f5", tagText: "#595959",
       title: "REC 1 + 2 — Metric Fix & Dual-Axis Geo",
       value: `${brief1.revolut_rate}%`,
-      sub: `replaces ${brief1.marketing_rate}% — ${fmt(ghostUsers)} ghost users removed`,
+      sub: `replaces ${brief1.marketing_rate}% — ${fmt(ghostMkt)}-user gap vs marketing-implied`,
       detail: "Reporting change + dashboard dual-axis. Eliminates structural planning blind spots.",
       border: "#e5e5e5", bg: "#fafafa",
     },
@@ -88,7 +107,7 @@ export default function OperatorPage({ data }: Props) {
           <MethodHint label="Matrix method">
             <p style={{ fontWeight: 600, marginBottom: 8 }}>How to read the grid</p>
             <p style={{ margin: 0, lineHeight: 1.6 }}>
-              Axes are deliberately coarse: “easy” still means change management (REC 1 touches how the firm talks about growth). “Hard” reflects engineering and policy work for TM rules (REC 3). The forward-looking block uses the #1 actor’s observed run rate and a 6-month window assumption to illustrate order-of-magnitude exposure — a committee communication device, not a forecast model.
+              Axes are deliberately coarse: “easy” still means change management (REC 1 touches how the firm talks about growth). “Hard” reflects engineering and policy work for TM rules (REC 3). The forward-looking block uses the #1 actor’s run rate with an illustrative 6-month window (halve the horizon to 3 months and the 30-day band ~doubles) — a committee communication device, not a forecast model.
             </p>
           </MethodHint>
         </div>
@@ -192,9 +211,9 @@ export default function OperatorPage({ data }: Props) {
         </div>
         <div style={{ padding: "20px 24px", background: "#f9f9f9", border: "1px solid #ebebeb", borderLeft: "3px solid #cf1322", borderRadius: "0 12px 12px 0" }}>
           <p style={{ fontSize: 14, color: "#404040", lineHeight: 1.7 }}>
-            At <strong style={{ color: "#0f0f0f" }}>{top1?.full_id.slice(0, 8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtGbpFromAmount(top1?.amount ?? 0)}, and assuming a 6-month observation window (approximately {top1 ? (top1.txns / 180).toFixed(1) : 0} transactions per day at {top1 ? fmtGbpFromAmount(Math.round(top1.amount / top1.txns)) : "—"} average),{" "}
-            <strong style={{ color: "#cf1322" }}>30 additional days without intervention projects {fmtGbpFromAmount(proj30dGbp)} in further exposure.</strong>{" "}
-            With all {top1?.types_used} transaction channels active across {top1?.countries_hit} countries, velocity — not footprint expansion — is the only remaining detection window. Risk compounds in real time: each detection cycle that passes without nightly scoring is a window where ranked actors continue operating unimpeded.
+            At <strong style={{ color: "#0f0f0f" }}>{top1?.full_id.slice(0, 8)}</strong>&apos;s run rate of {fmt(top1?.txns ?? 0)} transactions generating {fmtGbpFromAmount(top1?.amount ?? 0)}, and assuming an illustrative 6-month window (approximately {top1 ? (top1.txns / 180).toFixed(1) : 0} txns/day at {top1 ? fmtGbpFromAmount(Math.round(top1.amount / top1.txns)) : "—"} average; no dates in extract),{" "}
+            <strong style={{ color: "#cf1322" }}>30 further days projects ~{fmtGbpFromAmount(proj30dGbp)} exposure;</strong> at a 3-month window, ~{fmtGbpFromAmount(proj30dSens)} over the same 30-day band.{" "}
+            With all {top1?.types_used} channels active across {top1?.countries_hit} countries, velocity — not footprint expansion — is the main remaining detection window.
           </p>
         </div>
       </div>
@@ -208,26 +227,32 @@ export default function OperatorPage({ data }: Props) {
           {[
             {
               tag: "REC 1",
-              title: "Retire the 79.21% conversion metric",
-              cost: `~${fmtM(ghostUsers * 90)} in phantom revenue per cohort`,
-              detail: `${fmt(ghostUsers)} ghost-converted users × £90 annual ARPU — a conservative industry benchmark for neobank interchange revenue. A planning error that compounds with every acquisition campaign.`,
+              title: `Retire the ${brief1.marketing_rate}% conversion metric`,
+              cost: "Planning gap vs revenue-ready users",
+              detail: `${fmt(ghostMkt)} users appear “converted” if the headline % is read against registered users but generate no interchange — Finance should own any £/user impact; do not invent ARPU from the extract.`,
             },
             {
               tag: "REC 2",
               title: "Dual-axis geographic risk model",
-              cost: `${fmtM(topRate?.fraud_amount ?? 0)} in deprioritised losses`,
+              cost: `${fmtRawAmountMajor(topRate?.fraud_amount ?? 0)} in deprioritised losses`,
               detail: `${topRate?.country}'s ${topRate?.rate}% fraud rate is invisible under a volume-only model — its losses are treated as low-priority.`,
             },
             {
               tag: "REC 3",
               title: "Behavioural rules on top of KYC",
-              cost: `${fmtM(Math.round(kycFraudTotal))} in interceptable losses`,
-              detail: `${fmt(brief2b.fraud_count)} fraud transactions × £${(brief2b.fraud_avg_amount / 1000).toFixed(1)}K average — all from KYC-passed users that behavioural rules would have flagged.`,
+              cost: `${fmtM(kycRec3Display)} in interceptable losses`,
+              detail:
+                typeof kycFraudFiat === "number"
+                  ? `Fiat GBP on the KYC-passed cohort (${kycRec3FiatTxnLabel} txns with a fiat GBP conversion, ~${(kycRec3Mean / 1000).toFixed(1)}K mean in GBP; FX-converted, ex crypto — same basis as executive fraud losses) — behavioural rules target this stack; PENDING-heavy actors are a separate investigations track.`
+                  : `Exact fraud-ticket sum on the KYC-passed cohort (${fmt(brief2b.fraud_count)} txns, ~${(brief2b.fraud_avg_amount / 1000).toFixed(1)}K mean) — behavioural rules target this stack; PENDING-heavy actors are a separate investigations track.`,
             },
             {
               tag: "REC 4",
               title: "Immediate action + nightly composite scoring",
-              cost: `${fmtGbpFromAmount(Math.round(top5Total))} top-5 combined at risk`,
+              cost:
+                top5FiatTotal != null
+                  ? `${fmtM(Math.round(top5FiatTotal))} on fiat GBP (raw ${fmtGbpFromAmount(Math.round(top5Total))})`
+                  : `${fmtGbpFromAmount(Math.round(top5Total))} top-5 combined at risk`,
               detail: `Every day without nightly composite scoring is a day the ranked list goes un-actioned. The #1 actor alone: ${fmtGbpFromAmount(top1?.amount ?? 0)}.`,
             },
           ].map((r, i) => (

@@ -11,6 +11,7 @@ import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarC
 import SectionCard from "./SectionCard";
 import type { Brief2b, FraudByType } from "@/lib/types";
 import { buildBrief2bMerchantMixRows, merchantMixToChartData } from "@/lib/brief2bMerchantChart";
+import { fmtRawAmountMajor } from "@/lib/gbpMinor";
 
 interface Props {
   data: Brief2b;
@@ -20,11 +21,6 @@ interface Props {
 }
 
 const fmt  = (n: number) => n.toLocaleString();
-const fmtM = (n: number) => {
-  if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `£${(n / 1_000).toFixed(0)}K`;
-  return `£${n}`;
-};
 
 export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatus }: Props) {
   const fraudTop = data.kyc_fraud_merchant_top ?? [];
@@ -93,11 +89,11 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
         <div style={{ display: "flex", gap: 32 }}>
           <div style={{ textAlign: "right" }}>
             <p style={{ fontSize: 11, color: "#9898ac", marginBottom: 4 }}>Avg Fraud Txn</p>
-            <p style={{ fontSize: 20, fontWeight: 700, color: "#dc2626" }}>{fmtM(data.fraud_avg_amount)}</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: "#dc2626" }}>{fmtRawAmountMajor(data.fraud_avg_amount)}</p>
           </div>
           <div style={{ textAlign: "right" }}>
             <p style={{ fontSize: 11, color: "#9898ac", marginBottom: 4 }}>Avg Legit Txn</p>
-            <p style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{fmtM(data.legit_avg_amount)}</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{fmtRawAmountMajor(data.legit_avg_amount)}</p>
           </div>
         </div>
       </div>
@@ -151,7 +147,7 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
             <div style={{ padding: "10px 14px", borderRadius: 10, background: "#f9f9fb", border: "1px solid #e8e8ed", display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: 13, fontWeight: 500 }}>Median txn · birth</span>
               <span style={{ fontSize: 12, color: "#6b6b80", textAlign: "right" }}>
-                {fmtM(data.fraud_median_txn_amount ?? data.fraud_avg_amount)} / {fmtM(data.legit_median_txn_amount ?? data.legit_avg_amount)}
+                {fmtRawAmountMajor(data.fraud_median_txn_amount ?? data.fraud_avg_amount)} / {fmtRawAmountMajor(data.legit_median_txn_amount ?? data.legit_avg_amount)}
                 <span style={{ display: "block", marginTop: 4 }}>
                   Birth {data.fraud_median_birth_year ?? data.fraud_avg_birth} · {data.legit_median_birth_year ?? data.legit_avg_birth}
                 </span>
@@ -225,8 +221,11 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
       </div>
 
       <div style={{ marginTop: 28 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Merchant country mix (% of cohort txns)
+        </p>
+        <p style={{ fontSize: 11, color: "#9898ac", marginBottom: 12, lineHeight: 1.5 }}>
+          Null = non-merchant transaction types (TOPUP/P2P/BT) with no merchant country by design, not missing data.
         </p>
         <div style={{ border: "1px solid #e8e8ed", borderRadius: 12, overflow: "hidden" }}>
           <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>

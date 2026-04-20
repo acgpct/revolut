@@ -36,7 +36,7 @@ export default function ConversionSection({ data }: Props) {
       {/* Rate comparison */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         {[
-          { label: "Marketing Definition", value: `${data.marketing_rate}%`, sub: "Card users (incl. fraud) ÷ KYC-attempted — smaller denominator", color: "#d97706", bg: "#fffbeb" },
+          { label: "Marketing Definition", value: `${data.marketing_rate}%`, sub: "Users with ≥1 card or bank transfer (incl. fraud) ÷ registered users", color: "#d97706", bg: "#fffbeb" },
           { label: "Revolut Definition", value: `${data.revolut_rate}%`, sub: "KYC passed + ≥1 legitimate card payment ÷ all registered users", color: "#4f46e5", bg: "#eef2ff" },
         ].map((r) => (
           <div key={r.label} style={{ background: r.bg, borderRadius: 14, padding: "22px 24px" }}>
@@ -56,7 +56,7 @@ export default function ConversionSection({ data }: Props) {
       }}>
         <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>💡</span>
         <p style={{ fontSize: 13, color: "#78350f", lineHeight: 1.6 }}>
-          <strong>Marketing rate reconstruction:</strong> on this dataset the headline figure aligns with <em>any user with a card payment ÷ users who attempted KYC</em> — <strong>{data.marketing_rate}%</strong> — a numerator that includes fraudulent card use and a denominator smaller than all registered users.{" "}
+          <strong>Marketing rate:</strong> headline <strong>{data.marketing_rate}%</strong> marketing reach — definition is <em>distinct users with ≥1 <code>CARD_PAYMENT</code> or <code>BANK_TRANSFER</code> ÷ all registered users</em> ({fmt(data.card_or_bank_users)} ÷ {fmt(data.unique_users)} users).{" "}
           <strong>Why the gap vs true conversion?</strong> Many of those users never generate <em>interchange revenue</em> (non-card spend, or no legitimate card payment after KYC).
           The Revolut definition requires <strong>KYC passed</strong>, <strong>≥1 legitimate card payment</strong>, and ideally within 30 days of sign-up (date data unavailable here).
           This yields <strong>{data.revolut_rate}%</strong> — the only rate that represents a genuine, revenue-positive customer.

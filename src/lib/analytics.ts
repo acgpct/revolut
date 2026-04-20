@@ -1,4 +1,6 @@
-import type { Analytics, Brief2a, MerchantCountryMixRow } from "./types";
+import type { Analytics, Brief2a, Brief2bTypeMerchantHeatmap, KycFraudArchetypeRow, MerchantCountryMixRow } from "./types";
+import { aggregateFiatGbp, loadFxSnapshot, amountToGbp, sumAmountGbpFiat } from "./fiatToGbp";
+import { BRIEF2B_REPLICATION_META } from "./brief2bReplicationMeta";
 
 /* ─── helpers ──────────────────────────────────────────── */
 const get = (r: Record<string, string>, key: string) =>
@@ -36,7 +38,7 @@ const PRIORITY_TO_KYC: Record<number, string> = { 4: "PASSED", 3: "PENDING", 2: 
 export function computeAnalytics(rows: Record<string, string>[]): Analytics {
 
   /* ── Normalise rows ─────────────────────────────────── */
-  const norm = rows.map((r) => ({
+  const norm = rows.map((r, row_order) => ({
     user_id:          get(r, "USER_ID"),
     type:             get(r, "TYPE"),
     amount:           parseFloat(get(r, "AMOUNT") || "0"),
@@ -46,6 +48,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
     birth_year:       parseInt(get(r, "BIRTH_YEAR") || "0"),
     country:          get(r, "COUNTRY"),
     is_fraud:         get(r, "IS_FRAUD") === "True",
+    row_order,
   }));
 
   const fraudNorm = norm.filter((r) => r.is_fraud);
@@ -57,6 +60,16 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   const fraudTxns    = fraudNorm.length;
   const totalAmount  = norm.reduce((s, r) => s + r.amount, 0);
   const fraudAmount  = fraudNorm.reduce((s, r) => s + r.amount, 0);
+
+  const { rates, asOfUtc } = loadFxSnapshot();
+  const fiatGbp = aggregateFiatGbp(
+    norm.map((r) => ({ amount: r.amount, currency: r.currency, is_fraud: r.is_fraud })),
+    rates,
+  );
+  const totalAmountGbpFiat = Math.round(fiatGbp.totalAmountGbp);
+  const fraudAmountGbpFiat = Math.round(fiatGbp.fraudAmountGbp);
+  const fraudAmountPctGbpFiat =
+    totalAmountGbpFiat > 0 ? round2((fraudAmountGbpFiat / totalAmountGbpFiat) * 100) : 0;
 
   /* ── Step 1: KYC status per user (max-priority rule) ── */
   // Each user may have multiple rows with different KYC values.
@@ -81,16 +94,22 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   );
   const topupUsers   = new Set(norm.filter((r) => r.type === "TOPUP").map((r) => r.user_id));
   const cardUsers    = new Set(norm.filter((r) => r.type === "CARD_PAYMENT").map((r) => r.user_id));
+  /** Users with ≥1 CARD_PAYMENT or BANK_TRANSFER row (any label, includes fraud) — reconstructible marketing-reach numerator. */
+  const cardOrBankUsers = new Set(
+    norm.filter((r) => r.type === "CARD_PAYMENT" || r.type === "BANK_TRANSFER").map((r) => r.user_id)
+  );
 
-  // Marketing rate = card_users / kyc_attempted  (~79.2%)
-  // Inflated: numerator includes fraud card payments; denominator is kyc-attempted, not all users
-  const marketingRate = round2((cardUsers.size / (kycAttemptedUsers.size || 1)) * 100);
+  /** Publication headline (whole percent); implied-user math uses this field. */
+  const marketingRate = 78;
 
   // Strict rate = (KYC-passed ∩ legit-card-users) / total_users  (65.6%)
   const legitCardUsers = new Set(legitNorm.filter((r) => r.type === "CARD_PAYMENT").map((r) => r.user_id));
   const strictConverted = new Set([...kycPassedUsers].filter((u) => legitCardUsers.has(u)));
   const strictRate = round2((strictConverted.size / (totalUsers || 1)) * 100);
   const notTrueConvertedUsers = totalUsers - strictConverted.size;
+  /** If the marketing headline % were read as “share of registered users”, implied converts vs true converts. */
+  const marketingImpliedUsers = Math.ceil((totalUsers * marketingRate) / 100 - 1e-9);
+  const ghostUsersVsMarketingClaim = Math.max(0, marketingImpliedUsers - strictConverted.size);
 
   // Transaction-type map
   const txnTypeMap: Record<string, { count: number; fraud: number }> = {};
@@ -115,9 +134,9 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   }
 
   const geoList = Object.entries(geoMap)
-    .filter(([, g]) => g.total >= 50)
+    .filter(([c, g]) => c !== "" && g.total >= 50)
     .map(([country, g]) => ({
-      country: country === "" ? "Unknown / Null" : country,
+      country,
       total:        g.total,
       fraud:        g.fraud,
       rate:         round2((g.fraud / g.total) * 100),
@@ -127,6 +146,30 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
 
   // Sorted by fraud volume; full list kept so rate-chart can surface low-volume / high-rate countries (e.g. MDA)
   const byVolume = [...geoList].sort((a, b) => b.fraud - a.fraud);
+
+  /* User registered country (COUNTRY) — attack origin / jurisdiction lens; min 50 txns */
+  const geoUserMap: Record<string, { total: number; fraud: number; fraudAmt: number; totalAmt: number }> = {};
+  for (const r of norm) {
+    const c = r.country ?? "";
+    if (!geoUserMap[c]) geoUserMap[c] = { total: 0, fraud: 0, fraudAmt: 0, totalAmt: 0 };
+    geoUserMap[c].total++;
+    geoUserMap[c].totalAmt += r.amount;
+    if (r.is_fraud) {
+      geoUserMap[c].fraud++;
+      geoUserMap[c].fraudAmt += r.amount;
+    }
+  }
+  const geoUserList = Object.entries(geoUserMap)
+    .filter(([c, g]) => c !== "" && g.total >= 50)
+    .map(([country, g]) => ({
+      country,
+      total: g.total,
+      fraud: g.fraud,
+      rate: round2((g.fraud / g.total) * 100),
+      fraud_amount: Math.round(g.fraudAmt),
+      total_amount: Math.round(g.totalAmt),
+    }))
+    .sort((a, b) => b.fraud - a.fraud);
 
   // Fraud loss split by channel class (fraud-labelled rows only; complements MERCHANT_COUNTRY geo view)
   let fraudAmtMerchantFacing = 0;
@@ -139,6 +182,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   }
   const brief2a: Brief2a = {
     geo_risk: byVolume,
+    geo_risk_user_country: geoUserList,
     fraud_amount_merchant_facing: Math.round(fraudAmtMerchantFacing),
     fraud_amount_platform: Math.round(fraudAmtPlatform),
   };
@@ -178,6 +222,45 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   }
   const kycLegitUserList = Object.values(kycLegitPerUser);
 
+  const fraudAmountKycPassedCohort = kycFraudFraudTxns.reduce((s, r) => s + r.amount, 0);
+  const kycCohortFiat = sumAmountGbpFiat(
+    kycFraudFraudTxns.map((r) => ({ amount: r.amount, currency: r.currency })),
+    rates,
+  );
+  const fraudAmountKycPassedCohortGbpFiat = Math.round(kycCohortFiat.sumGbp);
+  const fraudTxnsKycPassedCohortFiatGbp = kycCohortFiat.convertibleRows;
+
+  // PENDING row-level concentration (largest share of fraud-labelled PENDING txns)
+  const pendingFraudCountByUser: Record<string, number> = {};
+  const pendingTxnCountByUser: Record<string, number> = {};
+  let pendingTotAll = 0;
+  let pendingFraudAll = 0;
+  for (const r of norm) {
+    if (r.kyc !== "PENDING") continue;
+    pendingTotAll++;
+    pendingTxnCountByUser[r.user_id] = (pendingTxnCountByUser[r.user_id] || 0) + 1;
+    if (r.is_fraud) {
+      pendingFraudAll++;
+      pendingFraudCountByUser[r.user_id] = (pendingFraudCountByUser[r.user_id] || 0) + 1;
+    }
+  }
+  let pendingOutlierUid = "";
+  let maxPendingFraud = 0;
+  for (const [uid, n] of Object.entries(pendingFraudCountByUser)) {
+    if (n > maxPendingFraud) {
+      maxPendingFraud = n;
+      pendingOutlierUid = uid;
+    }
+  }
+  const pOutFraud = pendingOutlierUid ? (pendingFraudCountByUser[pendingOutlierUid] ?? 0) : 0;
+  const pOutTot = pendingOutlierUid ? (pendingTxnCountByUser[pendingOutlierUid] ?? 0) : 0;
+  let pendingFraudRateExOutlier: number | undefined;
+  if (pendingOutlierUid && pOutTot > 0) {
+    const pfEx = pendingFraudAll - pOutFraud;
+    const ptEx = pendingTotAll - pOutTot;
+    pendingFraudRateExOutlier = ptEx > 0 ? round2((pfEx / ptEx) * 100) : 0;
+  }
+
   const fraudMedTxnAmt = Math.round(median(kycFraudFraudTxns.map((r) => r.amount)));
   const legitMedTxnAmt = Math.round(median(kycLegitLegitTxns.map((r) => r.amount)));
   const fraudBirthYears = kycFraudUserList.map((u) => u.birth).filter((b) => b > 1900);
@@ -186,6 +269,140 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   const legitMedBirth = legitBirthYears.length ? Math.round(median(legitBirthYears)) : 0;
   const kycFraudMerchantTop = topMerchantMixRows(kycFraudTxns, 8);
   const kycLegitMerchantTop = topMerchantMixRows(kycLegitTxns, 8);
+
+  /* ── Brief 2B — actor archetypes, row-order proxy, REC 3 counterfactual, heatmap ─ */
+  type ArchId = "topup_atm" | "bank_transfer" | "card_first" | "mixed";
+  const dominantArchetype = (counts: Record<string, number>): ArchId => {
+    const tot = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (tot === 0) return "mixed";
+    const p = (t: string) => (counts[t] ?? 0) / tot;
+    const cashout = p("TOPUP") + p("ATM");
+    const bank = p("BANK_TRANSFER");
+    const card = p("CARD_PAYMENT") + 0.5 * p("P2P");
+    const cand: { id: ArchId; v: number }[] = [
+      { id: "topup_atm", v: cashout },
+      { id: "bank_transfer", v: bank },
+      { id: "card_first", v: card },
+    ];
+    cand.sort((a, b) => b.v - a.v);
+    if (cand[0]!.v < 0.15 || cand[0]!.v - cand[1]!.v < 0.04) return "mixed";
+    return cand[0]!.id;
+  };
+  const rec3UserWouldFlag = (counts: Record<string, number>): boolean => {
+    const tot = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (tot === 0) return false;
+    const p = (t: string) => (counts[t] ?? 0) / tot;
+    let hits = 0;
+    if (p("ATM") > 0.25) hits++;
+    if (p("BANK_TRANSFER") > 0.15) hits++;
+    if (p("CARD_PAYMENT") < 0.45) hits++;
+    return hits >= 2;
+  };
+
+  const kycFraudUserTypeCounts: Record<string, Record<string, number>> = {};
+  for (const r of kycFraudTxns) {
+    if (!kycFraudUserTypeCounts[r.user_id]) kycFraudUserTypeCounts[r.user_id] = {};
+    kycFraudUserTypeCounts[r.user_id][r.type] = (kycFraudUserTypeCounts[r.user_id][r.type] || 0) + 1;
+  }
+
+  const archLabel: Record<ArchId, string> = {
+    topup_atm: "Top-up / ATM cash-out",
+    bank_transfer: "Bank-transfer extractor",
+    card_first: "Card-first / tester",
+    mixed: "Multi-rail / mixed",
+  };
+
+  const userArch: Record<string, ArchId> = {};
+  const archUsers: Record<ArchId, Set<string>> = {
+    topup_atm: new Set(),
+    bank_transfer: new Set(),
+    card_first: new Set(),
+    mixed: new Set(),
+  };
+  const archFraudTxns: Record<ArchId, number> = { topup_atm: 0, bank_transfer: 0, card_first: 0, mixed: 0 };
+  for (const uid of kycFraudUserIds) {
+    const counts = kycFraudUserTypeCounts[uid] ?? {};
+    const a = dominantArchetype(counts);
+    userArch[uid] = a;
+    archUsers[a].add(uid);
+  }
+  for (const r of kycFraudFraudTxns) {
+    const a = userArch[r.user_id] ?? "mixed";
+    archFraudTxns[a]++;
+  }
+
+  const kycFraudArchetypes: KycFraudArchetypeRow[] = (["topup_atm", "bank_transfer", "card_first", "mixed"] as ArchId[]).map(
+    (id) => ({
+      id,
+      label: archLabel[id],
+      users: archUsers[id].size,
+      fraud_txns: archFraudTxns[id],
+      pct_users: kycFraudUserIds.size ? round2((archUsers[id].size / kycFraudUserIds.size) * 100) : 0,
+      pct_fraud_txns: kycFraudFraudTxns.length ? round2((archFraudTxns[id] / kycFraudFraudTxns.length) * 100) : 0,
+    }),
+  ).sort((a, b) => b.fraud_txns - a.fraud_txns);
+
+  const nRows = norm.length;
+  const tCut1 = Math.max(1, Math.floor(nRows / 3));
+  const tCut2 = Math.max(tCut1 + 1, Math.floor((2 * nRows) / 3));
+  const tertFraud = [0, 0, 0];
+  for (const r of kycFraudFraudTxns) {
+    const o = r.row_order;
+    if (o < tCut1) tertFraud[0]++;
+    else if (o < tCut2) tertFraud[1]++;
+    else tertFraud[2]++;
+  }
+  const tfTot = kycFraudFraudTxns.length || 1;
+  const kycFraudRowOrderTertileFraudSharePct: [number, number, number] = [
+    round2((tertFraud[0] / tfTot) * 100),
+    round2((tertFraud[1] / tfTot) * 100),
+    round2((tertFraud[2] / tfTot) * 100),
+  ];
+
+  const rowDen = Math.max(nRows - 1, 1);
+  const fraudRowNorms = kycFraudFraudTxns.map((r) => r.row_order / rowDen);
+  const legitRowNorms = kycLegitLegitTxns.map((r) => r.row_order / rowDen);
+  const kycFraudMedianRowNorm = fraudRowNorms.length ? round2(median(fraudRowNorms)) : 0;
+  const kycLegitMedianRowNorm = legitRowNorms.length ? round2(median(legitRowNorms)) : 0;
+
+  const rec3FlaggedUsers = new Set<string>();
+  for (const uid of kycFraudUserIds) {
+    if (rec3UserWouldFlag(kycFraudUserTypeCounts[uid] ?? {})) rec3FlaggedUsers.add(uid);
+  }
+  let rec3ScopeFraudTxns = 0;
+  let rec3ScopeFiatTxns = 0;
+  for (const r of kycFraudFraudTxns) {
+    if (!rec3FlaggedUsers.has(r.user_id)) continue;
+    rec3ScopeFraudTxns++;
+    if (amountToGbp(r.amount, r.currency, rates) != null) rec3ScopeFiatTxns++;
+  }
+
+  const typeCountry: Record<string, Record<string, number>> = {};
+  for (const r of kycFraudFraudTxns) {
+    const mc = (r.merchant_country ?? "").trim() || "—";
+    if (!typeCountry[r.type]) typeCountry[r.type] = {};
+    typeCountry[r.type][mc] = (typeCountry[r.type][mc] || 0) + 1;
+  }
+  const typeTotals: Record<string, number> = {};
+  for (const [ty, mcmap] of Object.entries(typeCountry)) {
+    typeTotals[ty] = Object.values(mcmap).reduce((s, v) => s + v, 0);
+  }
+  const heatRows = Object.entries(typeTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([k]) => k);
+  const countryTotals: Record<string, number> = {};
+  for (const r of kycFraudFraudTxns) {
+    const mc = (r.merchant_country ?? "").trim() || "—";
+    countryTotals[mc] = (countryTotals[mc] || 0) + 1;
+  }
+  const heatCols = Object.entries(countryTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([k]) => k);
+  const matrix = heatRows.map((ty) => heatCols.map((mc) => typeCountry[ty]?.[mc] ?? 0));
+  const kycFraudTypeMerchantHeatmap: Brief2bTypeMerchantHeatmap | undefined =
+    heatRows.length && heatCols.length ? { row_labels: heatRows, col_labels: heatCols, matrix } : undefined;
 
   // Type % distribution
   const typePct = (txns: typeof norm) => {
@@ -225,6 +442,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   type UserFraudAgg = {
     txns: number;
     amount: number;
+    amountGbpFiat: number;
     avgAmount: number;
     types: Record<string, number>;
     countries: Set<string>;
@@ -233,9 +451,11 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
   const userFraud: Record<string, UserFraudAgg> = {};
   for (const r of fraudNorm) {
     if (!userFraud[r.user_id])
-      userFraud[r.user_id] = { txns: 0, amount: 0, avgAmount: 0, types: {}, countries: new Set(), kyc: r.kyc };
+      userFraud[r.user_id] = { txns: 0, amount: 0, amountGbpFiat: 0, avgAmount: 0, types: {}, countries: new Set(), kyc: r.kyc };
     userFraud[r.user_id].txns++;
     userFraud[r.user_id].amount += r.amount;
+    const gbp = amountToGbp(r.amount, r.currency, rates);
+    if (gbp != null) userFraud[r.user_id].amountGbpFiat += gbp;
     userFraud[r.user_id].types[r.type] = (userFraud[r.user_id].types[r.type] || 0) + 1;
     const mcF = (r.merchant_country ?? "").trim();
     if (mcF !== "") userFraud[r.user_id].countries.add(mcF);
@@ -274,6 +494,7 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       full_id: uid,
       txns: u.txns,
       amount: Math.round(u.amount),
+      amount_gbp_fiat: Math.round(u.amountGbpFiat),
       types_used,
       countries_hit: u.countries.size,
       kyc: userKycStatus[uid] ?? u.kyc,
@@ -303,6 +524,13 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       fraud_amount:     Math.round(fraudAmount),
       unique_users:     totalUsers,
       fraud_amount_pct: round2((fraudAmount / totalAmount) * 100),
+      total_amount_gbp_fiat:     totalAmountGbpFiat,
+      fraud_amount_gbp_fiat:     fraudAmountGbpFiat,
+      fraud_amount_pct_gbp_fiat: fraudAmountPctGbpFiat,
+      fx_rates_as_of_utc:       asOfUtc,
+      txn_rows_fiat_in_gbp:     fiatGbp.fiatTxnRows,
+      txn_rows_crypto_excluded: fiatGbp.cryptoTxnRows,
+      txn_rows_unknown_currency: fiatGbp.unknownCurrencyTxnRows,
     },
     brief1: {
       unique_users:            totalUsers,
@@ -310,9 +538,12 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       kyc_passed_users:        kycPassedUsers.size,
       topup_users:             topupUsers.size,
       card_users:              cardUsers.size,
+      card_or_bank_users:      cardOrBankUsers.size,
       legit_card_users:        legitCardUsers.size,
       strict_converted_users:  strictConverted.size,
       not_true_converted_users: notTrueConvertedUsers,
+      marketing_implied_users: marketingImpliedUsers,
+      ghost_users_vs_marketing_claim: ghostUsersVsMarketingClaim,
       // legacy fields kept for backwards compat
       spending_users:          0,
       converted_users:         0,
@@ -344,6 +575,22 @@ export function computeAnalytics(rows: Record<string, string>[]): Analytics {
       legit_avg_countries:    kycLegitUserList.length  ? round2(avg(kycLegitUserList.map((u) => u.countries.size))) : 0,
       kyc_fraud_merchant_top: kycFraudMerchantTop,
       kyc_legit_merchant_top: kycLegitMerchantTop,
+      fraud_amount_kyc_passed_cohort: Math.round(fraudAmountKycPassedCohort),
+      fraud_amount_kyc_passed_cohort_gbp_fiat: fraudAmountKycPassedCohortGbpFiat,
+      fraud_txns_kyc_passed_cohort_fiat_gbp: fraudTxnsKycPassedCohortFiatGbp,
+      pending_fraud_outlier_user_id: pendingOutlierUid || undefined,
+      pending_fraud_txns_from_outlier: pendingOutlierUid ? pOutFraud : undefined,
+      pending_total_txns_from_outlier: pendingOutlierUid ? pOutTot : undefined,
+      pending_fraud_rate_ex_outlier: pendingFraudRateExOutlier,
+      kyc_fraud_archetypes: kycFraudArchetypes,
+      kyc_fraud_row_order_tertile_fraud_share_pct: kycFraudRowOrderTertileFraudSharePct,
+      kyc_fraud_median_row_order_norm: kycFraudMedianRowNorm,
+      kyc_legit_median_row_order_norm: kycLegitMedianRowNorm,
+      kyc_fraud_type_merchant_heatmap: kycFraudTypeMerchantHeatmap,
+      rec3_rule_flagged_users: rec3FlaggedUsers.size,
+      rec3_rule_scope_fraud_txns: rec3ScopeFraudTxns,
+      rec3_rule_scope_fraud_txns_fiat_gbp: rec3ScopeFiatTxns,
+      replication: BRIEF2B_REPLICATION_META,
     },
     kyc_status:       kycStatusTxns,
     kyc_fraud_status: kycFraudStatusTxns,

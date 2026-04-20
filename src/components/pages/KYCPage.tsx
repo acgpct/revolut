@@ -12,13 +12,9 @@ import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Brief2b, FraudByType } from "@/lib/types";
 import { buildBrief2bMerchantMixRows, merchantMixToChartData } from "@/lib/brief2bMerchantChart";
+import { fmtRawAmountMajor } from "@/lib/gbpMinor";
 
 const fmt  = (n: number) => n.toLocaleString();
-const fmtM = (n: number) => {
-  if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `£${(n / 1_000).toFixed(0)}K`;
-  return `£${n}`;
-};
 
 interface Props {
   data: Brief2b;
@@ -123,8 +119,8 @@ export default function KYCPage({ data, fraudByType, kycStatus, kycFraudStatus }
             {[
               { label: "Avg transactions / user", fraud: String(data.fraud_avg_txns_per_user ?? 0), legit: String(data.legit_avg_txns_per_user ?? 0) },
               { label: "Avg countries / user",    fraud: String(data.fraud_avg_countries ?? 0),    legit: String(data.legit_avg_countries ?? 0) },
-              { label: "Median transaction size", fraud: fmtM(data.fraud_median_txn_amount ?? data.fraud_avg_amount), legit: fmtM(data.legit_median_txn_amount ?? data.legit_avg_amount) },
-              { label: "Avg transaction size",     fraud: fmtM(data.fraud_avg_amount),              legit: fmtM(data.legit_avg_amount) },
+              { label: "Median transaction size", fraud: fmtRawAmountMajor(data.fraud_median_txn_amount ?? data.fraud_avg_amount), legit: fmtRawAmountMajor(data.legit_median_txn_amount ?? data.legit_avg_amount) },
+              { label: "Avg transaction size",     fraud: fmtRawAmountMajor(data.fraud_avg_amount),              legit: fmtRawAmountMajor(data.legit_avg_amount) },
               { label: "Median birth year",       fraud: String(data.fraud_median_birth_year ?? data.fraud_avg_birth ?? 0), legit: String(data.legit_median_birth_year ?? data.legit_avg_birth ?? 0) },
               { label: "Avg birth year",           fraud: String(data.fraud_avg_birth ?? 0),        legit: String(data.legit_avg_birth ?? 0) },
               { label: "Fraud ratio",              fraud: "100%",                                   legit: "0%" },
@@ -138,6 +134,127 @@ export default function KYCPage({ data, fraudByType, kycStatus, kycFraudStatus }
           </tbody>
         </table>
       </div>
+
+      {data.kyc_fraud_archetypes && data.kyc_fraud_archetypes.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+        <Panel
+          title="Actor archetypes"
+          description="Dominant rail from each fraud user’s full cohort transaction mix — not fraud rows only."
+          methodology="Three axis scores on ALL cohort txns per user (fraud+legit): topup_atm = p(TOPUP)+p(ATM); bank = p(BANK_TRANSFER); card = p(CARD)+0.5·p(P2P). Winner unless best < 0.15 or best−second < 0.04 (absolute on 0–1 scale). Not a 50% single-type dominance rule — canonical JSON: brief2b.replication in analytics.json."
+        >
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
+                {["Archetype", "Users", "% users", "Fraud txns", "% fraud txns"].map((h) => (
+                  <th key={h} style={{ padding: "10px 12px", textAlign: h === "Archetype" ? "left" : "right", fontSize: 11, fontWeight: 600, color: "#a3a3a3" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.kyc_fraud_archetypes.map((row) => (
+                <tr key={row.id} style={{ borderBottom: "1px solid #fafafa" }}>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#171717" }}>{row.label}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#cf1322" }}>{fmt(row.users)}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: "#737373" }}>{row.pct_users != null ? `${row.pct_users}%` : "—"}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: "#737373" }}>{fmt(row.fraud_txns)}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: "#737373" }}>{row.pct_fraud_txns != null ? `${row.pct_fraud_txns}%` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+        </div>
+      )}
+
+      {data.kyc_fraud_row_order_tertile_fraud_share_pct &&
+        data.kyc_fraud_median_row_order_norm != null &&
+        data.kyc_legit_median_row_order_norm != null && (
+          <div style={{ marginBottom: 24 }}>
+          <Panel
+            title="Row-order proxy (no dates)"
+            description="Uses CSV ingest index as a weak proxy for account or extract tenure."
+            methodology="Tertiles split the file into early / mid / late thirds by 0-based row index. Compare median normalised index for fraud- vs legit-labelled cohort rows."
+          >
+            <p style={{ margin: 0, fontSize: 14, color: "#404040", lineHeight: 1.65 }}>
+              Cohort fraud-labelled txns: <strong>{data.kyc_fraud_row_order_tertile_fraud_share_pct[0]}%</strong> /{" "}
+              <strong>{data.kyc_fraud_row_order_tertile_fraud_share_pct[1]}%</strong> /{" "}
+              <strong>{data.kyc_fraud_row_order_tertile_fraud_share_pct[2]}%</strong> in early / middle / late file thirds.
+              Median normalised row index <strong>{data.kyc_fraud_median_row_order_norm}</strong> (fraud rows) vs{" "}
+              <strong>{data.kyc_legit_median_row_order_norm}</strong> (legit rows).
+            </p>
+          </Panel>
+          </div>
+        )}
+
+      {data.kyc_fraud_type_merchant_heatmap && (() => {
+        const hm = data.kyc_fraud_type_merchant_heatmap;
+        const vmax = Math.max(1, ...hm.matrix.flat());
+        const shortType = (t: string) =>
+          t.replace("CARD_PAYMENT", "Card").replace("BANK_TRANSFER", "Transfer").replace("TOPUP", "Top-up").replace(/_/g, " ");
+        return (
+          <div style={{ marginBottom: 24 }}>
+          <Panel
+            title="Channel × merchant country (fraud cohort)"
+            description="Fraud-labelled transactions only — counts, not rates."
+            methodology="Top six channel types by fraud volume × top eight merchant countries."
+          >
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: 8, textAlign: "left", color: "#a3a3a3" }}>Type</th>
+                    {hm.col_labels.map((c) => (
+                      <th key={c} style={{ padding: 8, textAlign: "center", color: "#a3a3a3", maxWidth: 72 }}>
+                        {c.length > 12 ? `${c.slice(0, 11)}…` : c}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {hm.row_labels.map((ty, ri) => (
+                    <tr key={ty}>
+                      <td style={{ padding: 8, fontWeight: 600 }}>{shortType(ty)}</td>
+                      {(hm.matrix[ri] ?? []).map((v, ci) => (
+                        <td
+                          key={`${ri}-${ci}`}
+                          style={{
+                            padding: 8,
+                            textAlign: "center",
+                            background: `rgba(207,19,34,${0.05 + (v / vmax) * 0.5})`,
+                            color: v > vmax * 0.35 ? "#fff" : "#171717",
+                            fontWeight: v > 0 ? 600 : 400,
+                          }}
+                        >
+                          {v}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+          </div>
+        );
+      })()}
+
+      {typeof data.rec3_rule_flagged_users === "number" &&
+        typeof data.rec3_rule_scope_fraud_txns_fiat_gbp === "number" &&
+        typeof data.fraud_txns_kyc_passed_cohort_fiat_gbp === "number" && (
+          <div style={{ marginBottom: 24 }}>
+          <Panel
+            title="REC 3 static counterfactual"
+            description="Upper bound on review volume if dual-threshold rules fired on user mix (not recovered £)."
+            methodology="All cohort txns per user (fraud+legit). Strict inequalities: ATM/T > 0.25, BANK_TRANSFER/T > 0.15, CARD_PAYMENT/T < 0.45 (P2P excluded from card share). Flag if ≥2 true. Canonical JSON: brief2b.replication.rec3_counterfactual in analytics.json."
+          >
+            <p style={{ margin: 0, fontSize: 14, color: "#404040", lineHeight: 1.65 }}>
+              <strong>{fmt(data.rec3_rule_flagged_users)}</strong> fraud users and{" "}
+              <strong>{fmt(data.rec3_rule_scope_fraud_txns_fiat_gbp)}</strong> of{" "}
+              <strong>{fmt(data.fraud_txns_kyc_passed_cohort_fiat_gbp)}</strong> fiat-convertible cohort fraud txns would sit in automated rule scope.
+            </p>
+          </Panel>
+          </div>
+        )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
         {/* Radar */}

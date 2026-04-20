@@ -6,6 +6,7 @@ import MetricCard from "@/components/ui/MetricCard";
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Analytics } from "@/lib/types";
+import { fmtRawAmountMajor } from "@/lib/gbpMinor";
 
 const fmt  = (n: number) => n.toLocaleString();
 const fmtB = (n: number) => {
@@ -33,14 +34,14 @@ export default function OverviewPage({ data }: { data: Analytics }) {
           <>
             <p style={{ fontWeight: 600, marginBottom: 8 }}>Figure & metrics</p>
             <p style={{ margin: 0, lineHeight: 1.6 }}>
-              Volume chart stacks legitimate vs fraud <em>transaction counts</em> by <code>TYPE</code> — tall bars show activity mix, not implied fraud rate. KPIs use row-level fraud labels and amounts in the source currency scale (GBP display where shown).
+              Volume chart stacks legitimate vs fraud <em>transaction counts</em> by <code>TYPE</code> — tall bars show activity mix, not implied fraud rate. “Raw” KPIs sum <code>AMOUNT</code> as stored (mixed currencies). “Fiat GBP (ex crypto)” converts fiat rows to GBP using embedded daily rates; BTC/ETH/LTC/XRP are excluded from those sums.
             </p>
           </>
         }
       />
 
       {/* KPI row 1 — volume */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
         <MetricCard
           label="Total Transactions"
           value={fmt(overview.total_txns)}
@@ -52,14 +53,19 @@ export default function OverviewPage({ data }: { data: Analytics }) {
           sub="registered accounts"
         />
         <MetricCard
-          label="Total Volume"
-          value={fmtB(overview.total_amount)}
-          sub="total transaction value"
+          label="Total Volume (raw)"
+          value={fmtRawAmountMajor(overview.total_amount)}
+          sub="naive sum of AMOUNT"
+        />
+        <MetricCard
+          label="Total Volume (fiat GBP)"
+          value={typeof overview.total_amount_gbp_fiat === "number" ? fmtB(overview.total_amount_gbp_fiat) : "—"}
+          sub={overview.fx_rates_as_of_utc ? `ex crypto · FX ${overview.fx_rates_as_of_utc.slice(0, 16)}…` : "ex crypto · FX snapshot"}
         />
       </div>
 
       {/* KPI row 2 — fraud */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 48 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 48 }}>
         <MetricCard
           label="Fraud Transactions"
           value={fmt(overview.total_fraud)}
@@ -68,10 +74,17 @@ export default function OverviewPage({ data }: { data: Analytics }) {
           badgeVariant="red"
         />
         <MetricCard
-          label="Fraud Losses"
-          value={fmtB(overview.fraud_amount)}
-          sub="total fraud value"
-          badge={`${overview.fraud_amount_pct}% of volume`}
+          label="Fraud Losses (raw)"
+          value={fmtRawAmountMajor(overview.fraud_amount)}
+          sub="mixed-currency sum"
+          badge={`${overview.fraud_amount_pct}% of raw volume`}
+          badgeVariant="red"
+        />
+        <MetricCard
+          label="Fraud Losses (fiat GBP)"
+          value={typeof overview.fraud_amount_gbp_fiat === "number" ? fmtB(overview.fraud_amount_gbp_fiat) : "—"}
+          sub="ex crypto"
+          badge={typeof overview.fraud_amount_pct_gbp_fiat === "number" ? `${overview.fraud_amount_pct_gbp_fiat}% of fiat GBP volume` : undefined}
           badgeVariant="red"
         />
         <MetricCard

@@ -18,7 +18,7 @@ export default function FraudstersSection({ fraudsters, byAmount, totalFraudster
       tag="Bonus"
       tagColor="black"
       title="Top 5 Priority Fraudsters"
-      subtitle={`Naive £ vs composite priority ranking across ${fmt(totalFraudsters)} fraud actors — open Method (i) on the dashboard Top Fraudsters tab for the scoring formula.`}
+      subtitle={`Naive amount vs composite priority ranking across ${fmt(totalFraudsters)} fraud actors — open Method (i) on the dashboard Top Fraudsters tab for the scoring formula.`}
     >
       <FraudstersAuditBlock composite={fraudsters} byAmount={byAmount} variant="section" totalFraudsters={totalFraudsters} />
     </SectionCard>

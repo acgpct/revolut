@@ -29,13 +29,13 @@ export default function FraudstersPage({
       <PageHeader
         overline="Bonus"
         title="Top 5 Priority Fraudsters"
-        description={`Naive top 5 by fraud £ is shown next to composite top 5 from ${fmt(totalFraudsters)} fraud actors so investigators can contrast headline loss with forward-looking, cross-rail risk.`}
+        description={`Naive top 5 by Σ fraud AMOUNT (raw column, no currency symbol) is shown next to composite top 5 from ${fmt(totalFraudsters)} fraud actors; dossier tables also list Fiat GBP (embedded FX per row, ex crypto) beside raw totals.`}
         recommendation="Run composite nightly on the full fraud-user population and auto-queue the top decile for enhanced review; treat channel diversity plus cross-border use on #1 as a hard escalation."
         methodology={
           <>
             <p style={{ fontWeight: 600, marginBottom: 8 }}>fin_crime_audit.pdf alignment</p>
             <p style={{ margin: 0, lineHeight: 1.6 }}>
-              Composite score = 0.35·fraud value + 0.30·fraud txn count + 0.15·user fraud rate + 0.10·type diversity + 0.10·country diversity (each input normalised 0–1 across all fraud actors). Displayed score is 0–100 (weighted sum × 100). Naive ranking uses raw fraud £ only. GBP = source <code>AMOUNT</code> ÷ 100.
+              Composite score = 0.35·fraud value + 0.30·fraud txn count + 0.15·user fraud rate + 0.10·type diversity + 0.10·country diversity (each input scaled to [0, 1] via division by the dimension maximum — max-normalisation — across all fraud actors). Displayed score is 0–100 (weighted sum × 100). Weights follow the audit PDF / risk-team framing. Naive ranking and the fraud-value term both use <strong>Σ <code>AMOUNT</code></strong> on fraud-labelled rows per user — a naive mixed-currency aggregate (same scale as <code>overview.fraud_amount</code>), <strong>not</strong> row-wise fiat GBP conversion; the dossier <strong>Fiat GBP</strong> column is that row-wise conversion for context (same basis as <code>overview.fraud_amount_gbp_fiat</code> where rows convert). Reconciling naive raw sums in Excel with FX to GBP per row will not match the raw Σ <code>AMOUNT</code> column.
             </p>
           </>
         }

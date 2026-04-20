@@ -11,13 +11,9 @@ import GeographicRiskBubbleChart from "@/components/GeographicRiskBubbleChart";
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Brief2a } from "@/lib/types";
+import { fmtRawAmountMajor } from "@/lib/gbpMinor";
 
 const fmt  = (n: number) => n.toLocaleString();
-const fmtM = (n: number) => {
-  if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `£${(n / 1_000).toFixed(0)}K`;
-  return `£${n}`;
-};
 
 /** ISO 3166-1 alpha-3 → alpha-2 mapping (covers all codes seen in this dataset) */
 const ALPHA3_TO_2: Record<string, string> = {
@@ -94,7 +90,7 @@ const ChartTip = ({ active, payload }: { active?: boolean; payload?: { payload: 
       <ChartTooltipRows>
         <ChartTooltipRow label="Fraud txns" value={fmt(d.fraud)} valueColor="#cf1322" />
         <ChartTooltipRow label="Fraud rate" value={`${d.rate}%`} />
-        <ChartTooltipRow label="Fraud loss" value={fmtM(d.fraud_amount)} valueColor="#cf1322" />
+        <ChartTooltipRow label="Fraud loss" value={fmtRawAmountMajor(d.fraud_amount)} valueColor="#cf1322" />
       </ChartTooltipRows>
     </ChartTooltipRoot>
   );
@@ -119,7 +115,7 @@ export default function GeographicPage({ data }: { data: Brief2a }) {
             <p style={{ fontWeight: 600, marginBottom: 8 }}>Geography & filters</p>
             <p style={{ margin: 0, lineHeight: 1.6 }}>
               Charts and tables use <code>MERCHANT_COUNTRY</code> on each row where present. Countries with fewer than 50 transactions are excluded so small-sample noise does not drive policy.{" "}
-              Merchant-facing fraud £ sums card + ATM; platform fraud £ sums top-up, P2P, and bank transfer — aligned to where velocity vs terminal controls apply.
+              Merchant-facing fraud (raw Σ <code>AMOUNT</code>) sums card + ATM; platform fraud sums top-up, P2P, and bank transfer — aligned to where velocity vs terminal controls apply.
             </p>
           </>
         }
@@ -130,7 +126,7 @@ export default function GeographicPage({ data }: { data: Brief2a }) {
           <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#737373", marginBottom: 10 }}>
             Merchant-facing fraud · CARD + ATM
           </p>
-          <p style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f0f0f", lineHeight: 1 }}>{fmtM(mfLoss)}</p>
+          <p style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f0f0f", lineHeight: 1 }}>{fmtRawAmountMajor(mfLoss)}</p>
           <p style={{ fontSize: 13, color: "#737373", marginTop: 10, lineHeight: 1.55 }}>
             Fraud <code>AMOUNT</code> on card and ATM tickets — geographic and terminal controls apply.
           </p>
@@ -139,7 +135,7 @@ export default function GeographicPage({ data }: { data: Brief2a }) {
           <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#a3a3a3", marginBottom: 10 }}>
             Platform fraud · TOPUP + P2P + bank transfer
           </p>
-          <p style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#cf1322", lineHeight: 1 }}>{fmtM(pfLoss)}</p>
+          <p style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#cf1322", lineHeight: 1 }}>{fmtRawAmountMajor(pfLoss)}</p>
           <p style={{ fontSize: 13, color: "#737373", marginTop: 10, lineHeight: 1.55 }}>
             On-rail fund movement — velocity and behavioural controls apply. Brief 2B bank-transfer signals sit in this bucket, not merchant-country tiles alone.
           </p>
@@ -311,7 +307,7 @@ export default function GeographicPage({ data }: { data: Brief2a }) {
                     {row.rate}%
                   </span>
                 </td>
-                <td style={{ padding: "14px 24px", color: "#404040", fontWeight: 500 }}>{fmtM(row.fraud_amount)}</td>
+                <td style={{ padding: "14px 24px", color: "#404040", fontWeight: 500 }}>{fmtRawAmountMajor(row.fraud_amount)}</td>
               </tr>
             ))}
           </tbody>

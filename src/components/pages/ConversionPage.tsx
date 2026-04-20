@@ -1,7 +1,5 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ChartTooltipFromPayload } from "@/components/ui/ChartTooltip";
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Brief1 } from "@/lib/types";
@@ -10,12 +8,6 @@ import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 const fmt = (n: number | undefined | null) => (n ?? 0).toLocaleString();
 
 export default function ConversionPage({ data }: { data: Brief1 }) {
-  const txnData = data.txn_types.map((t) => ({
-    name: t.type.replace(/_/g, " "),
-    Legitimate: t.count - t.fraud,
-    Fraud: t.fraud,
-  }));
-
   const total = data.unique_users || 1;
   const funnelSteps = [
     { label: "Registered Users", value: data.unique_users ?? 0, pct: 100 },
@@ -39,7 +31,7 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
             <p style={{ fontWeight: 600, marginBottom: 8 }}>Definitions</p>
             <p style={{ margin: "0 0 10px", lineHeight: 1.6 }}>
               <strong>Strict “converted”</strong>: KYC-passed user with ≥1 <em>legitimate</em> card payment (interchange).{" "}
-              <strong>Marketing-style rate</strong>: card users (including fraudulent card spend) ÷ KYC-attempted users — smaller denominator than all registered users and a numerator that does not map 1:1 to revenue.
+              <strong>Marketing-style rate</strong>: users with ≥1 <code>CARD_PAYMENT</code> or <code>BANK_TRANSFER</code> (including fraud-labelled rows) ÷ all registered users — reconstructible from the extract; still not revenue-ready without KYC pass and legitimate card.
             </p>
             <p style={{ margin: 0, lineHeight: 1.6 }}>
               Funnel steps: registered → topped up → KYC passed → legitimate card payment → Revolut converted (true). Ghost users = counted toward marketing reach but excluded from strict converted.
@@ -54,7 +46,7 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
           {
             label: "Marketing Definition",
             value: `${data.marketing_rate}%`,
-            note: `${fmt(data.card_users ?? 0)} card users ÷ ${fmt(data.kyc_attempted_users ?? 0)} KYC-attempted`,
+            note: `${fmt(data.card_or_bank_users ?? 0)} users with card or bank transfer ÷ ${fmt(data.unique_users)} registered`,
             muted: true,
           },
           {
@@ -119,78 +111,43 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 3fr", gap: 16 }}>
-        {/* Funnel */}
-        <Panel
-          title="User Funnel"
-          description="Progressive narrowing from all registered users to strict converted."
-          methodology="Steps: Registered → Topped up → KYC passed → Legitimate card payment → Revolut converted (true). Percentages are share of all registered users in this extract."
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {funnelSteps.map((s, i) => (
-              <div key={s.label}>
-                <div style={{
-                  background: "#fafafa",
-                  border: "1px solid #f0f0f0",
-                  borderRadius: 10,
-                  padding: "16px 20px",
-                  opacity: 1 - i * 0.15,
+      <Panel
+        title="User Funnel"
+        description="Progressive narrowing from all registered users to strict converted."
+        methodology="Steps: Registered → Topped up → KYC passed → Legitimate card payment → Revolut converted (true). Percentages are share of all registered users in this extract."
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          {funnelSteps.map((s, i) => (
+            <div key={s.label}>
+              <div style={{
+                background: "#fafafa",
+                border: "1px solid #f0f0f0",
+                borderRadius: 10,
+                padding: "16px 20px",
+                opacity: 1 - i * 0.15,
+              }}>
+                <p style={{
+                  fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const,
+                  letterSpacing: "0.08em", color: "#a3a3a3", marginBottom: 8,
                 }}>
-                  <p style={{
-                    fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const,
-                    letterSpacing: "0.08em", color: "#a3a3a3", marginBottom: 8,
-                  }}>
-                    {s.label}
+                  {s.label}
+                </p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                  <p style={{ fontSize: 24, fontWeight: 700, color: "#0f0f0f", letterSpacing: "-0.02em" }}>
+                    {fmt(s.value)}
                   </p>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                    <p style={{ fontSize: 24, fontWeight: 700, color: "#0f0f0f", letterSpacing: "-0.02em" }}>
-                      {fmt(s.value)}
-                    </p>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "#a3a3a3" }}>{s.pct}%</p>
-                  </div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#a3a3a3" }}>{s.pct}%</p>
                 </div>
-                {i < funnelSteps.length - 1 && (
-                  <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
-                    <div style={{ width: 1, height: 16, background: "#e5e5e5" }} />
-                  </div>
-                )}
               </div>
-            ))}
-          </div>
-        </Panel>
-
-        {/* Chart */}
-        <Panel
-          title="Volume by Transaction Type"
-          description="Legitimate vs fraud transaction counts by channel."
-          methodology="Each stack sums row counts for that TYPE with fraud vs non-fraud labels — volume concentration, not implied fraud rate (use fraud-by-type rates elsewhere for that)."
-        >
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={txnData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-              <XAxis dataKey="name" tick={{ fill: "#a3a3a3", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#a3a3a3", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                content={(props) => (
-                  <ChartTooltipFromPayload {...props} formatValue={(v) => (typeof v === "number" ? fmt(v) : String(v))} />
-                )}
-                cursor={{ fill: "#fafafa" }}
-              />
-              <Bar dataKey="Legitimate" stackId="a" fill="#f0f0f0" />
-              <Bar dataKey="Fraud" stackId="a" fill="#0f0f0f" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: "#f0f0f0", border: "1px solid #e5e5e5" }} />
-              <span style={{ fontSize: 12, color: "#a3a3a3" }}>Legitimate</span>
+              {i < funnelSteps.length - 1 && (
+                <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+                  <div style={{ width: 1, height: 16, background: "#e5e5e5" }} />
+                </div>
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: "#0f0f0f" }} />
-              <span style={{ fontSize: 12, color: "#a3a3a3" }}>Fraud</span>
-            </div>
-          </div>
-        </Panel>
-      </div>
+          ))}
+        </div>
+      </Panel>
     </div>
   );
 }

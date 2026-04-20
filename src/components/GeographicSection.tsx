@@ -10,15 +10,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import SectionCard from "./SectionCard";
 import GeographicRiskBubbleChart from "./GeographicRiskBubbleChart";
 import type { Brief2a } from "@/lib/types";
+import { fmtRawAmountMajor } from "@/lib/gbpMinor";
 
 interface Props { data: Brief2a }
 
 const fmt  = (n: number) => n.toLocaleString();
-const fmtM = (n: number) => {
-  if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `£${(n / 1_000).toFixed(0)}K`;
-  return `£${n}`;
-};
 
 const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: { country: string; fraud: number; rate: number; fraud_amount: number; total: number } }[] }) => {
   if (!active || !payload?.length) return null;
@@ -29,7 +25,7 @@ const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: { cou
       <ChartTooltipRows>
         <ChartTooltipRow label="Fraud txns" value={fmt(d.fraud)} valueColor="#cf1322" />
         <ChartTooltipRow label="Fraud rate" value={`${d.rate}%`} valueColor="#ad6800" />
-        <ChartTooltipRow label="Fraud loss" value={fmtM(d.fraud_amount)} valueColor="#cf1322" />
+        <ChartTooltipRow label="Fraud loss" value={fmtRawAmountMajor(d.fraud_amount)} valueColor="#cf1322" />
         <ChartTooltipRow label="Total txns" value={fmt(d.total)} />
       </ChartTooltipRows>
     </ChartTooltipRoot>
@@ -58,12 +54,12 @@ export default function GeographicSection({ data }: Props) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
         <div style={{ background: "#fafafa", border: "1px solid #e8e8ed", borderRadius: 12, padding: "16px 18px" }}>
           <p style={{ fontSize: 10, fontWeight: 700, color: "#9898ac", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Merchant-facing · CARD + ATM</p>
-          <p style={{ fontSize: 28, fontWeight: 800, color: "#0a0a0f" }}>{fmtM(mfLoss)}</p>
+          <p style={{ fontSize: 28, fontWeight: 800, color: "#0a0a0f" }}>{fmtRawAmountMajor(mfLoss)}</p>
           <p style={{ fontSize: 12, color: "#6b6b80", marginTop: 6, lineHeight: 1.5 }}>Geographic controls primary.</p>
         </div>
         <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 18px" }}>
           <p style={{ fontSize: 10, fontWeight: 700, color: "#9b1c1c", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Platform · TOPUP + P2P + BT</p>
-          <p style={{ fontSize: 28, fontWeight: 800, color: "#dc2626" }}>{fmtM(pfLoss)}</p>
+          <p style={{ fontSize: 28, fontWeight: 800, color: "#dc2626" }}>{fmtRawAmountMajor(pfLoss)}</p>
           <p style={{ fontSize: 12, color: "#6b6b80", marginTop: 6, lineHeight: 1.5 }}>Behavioural / velocity controls — Brief 2B transfer risk lives here.</p>
         </div>
       </div>
@@ -182,7 +178,7 @@ export default function GeographicSection({ data }: Props) {
                       {row.rate}%
                     </span>
                   </td>
-                  <td style={{ padding: "11px 16px", color: "#dc2626", fontWeight: 600 }}>{fmtM(row.fraud_amount)}</td>
+                  <td style={{ padding: "11px 16px", color: "#dc2626", fontWeight: 600 }}>{fmtRawAmountMajor(row.fraud_amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -190,7 +186,7 @@ export default function GeographicSection({ data }: Props) {
         </div>
         {top8.some((r) => r.country === "Unknown / Null") && (
           <p style={{ fontSize: 11, color: "#9898ac", marginTop: 8, paddingLeft: 4, lineHeight: 1.5 }}>
-            <sup>†</sup> <em>Unknown / Null</em> represents transactions where the <code>MERCHANT_COUNTRY</code> field was not recorded in the source data.
+            <sup>†</sup> <em>Unknown / Null</em>: null <code>MERCHANT_COUNTRY</code> on non-merchant rails (TOPUP/P2P/BANK_TRANSFER) by design — not missing data.
           </p>
         )}
       </div>

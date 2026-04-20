@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { Analytics } from "@/lib/types";
+import { readPersistedAnalytics, writePersistedAnalytics, clearPersistedAnalytics } from "@/lib/persistedAnalytics";
 import OverviewPage   from "@/components/pages/OverviewPage";
 import ConversionPage from "@/components/pages/ConversionPage";
 import GeographicPage from "@/components/pages/GeographicPage";
@@ -58,9 +59,20 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const cached = readPersistedAnalytics();
+    if (cached) {
+      setAnalytics(cached);
+      setDataSource("uploaded");
+      setIsLoading(false);
+      return;
+    }
     fetch("/analytics.json")
-      .then(r => r.json())
-      .then((d: Analytics) => { setAnalytics(d); setIsLoading(false); })
+      .then((r) => r.json())
+      .then((d: Analytics) => {
+        setAnalytics(d);
+        setDataSource("default");
+        setIsLoading(false);
+      })
       .catch(() => setIsLoading(false));
   }, []);
 
@@ -95,9 +107,23 @@ export default function Dashboard() {
   };
 
   const handleNewData = (d: Analytics) => {
+    writePersistedAnalytics(d);
     setAnalytics(d);
     setDataSource("uploaded");
     setActivePage("overview");
+  };
+
+  const reloadBundledAnalytics = () => {
+    clearPersistedAnalytics();
+    setIsLoading(true);
+    fetch("/analytics.json")
+      .then((r) => r.json())
+      .then((d: Analytics) => {
+        setAnalytics(d);
+        setDataSource("default");
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
   };
 
   const sidebarW = collapsed ? COLLAPSED_WIDTH : navWidth;
@@ -328,17 +354,36 @@ export default function Dashboard() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {dataSource === "uploaded" && (
-              <span style={{
-                fontSize: 11,
-                fontWeight: 500,
-                padding: "3px 10px",
-                borderRadius: 99,
-                background: "#f5f5f5",
-                color: "#737373",
-                letterSpacing: "0.01em",
-              }}>
-                Custom dataset
-              </span>
+              <>
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  padding: "3px 10px",
+                  borderRadius: 99,
+                  background: "#f5f5f5",
+                  color: "#737373",
+                  letterSpacing: "0.01em",
+                }}>
+                  Custom dataset
+                </span>
+                <button
+                  type="button"
+                  onClick={reloadBundledAnalytics}
+                  title="PDF report and all pages use the same numbers as this dashboard"
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #e5e5e5",
+                    background: "#ffffff",
+                    color: "#525252",
+                    cursor: "pointer",
+                  }}
+                >
+                  Use bundled extract
+                </button>
+              </>
             )}
             <button
               onClick={() => setActivePage("upload")}
