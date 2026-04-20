@@ -1,8 +1,16 @@
 "use client";
 
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell } from "recharts";
+import {
+  ChartTooltipFromPayload,
+  ChartTooltipRoot,
+  ChartTooltipTitle,
+  ChartTooltipRows,
+  ChartTooltipRow,
+} from "@/components/ui/ChartTooltip";
+import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell, CartesianGrid } from "recharts";
 import SectionCard from "./SectionCard";
 import type { Brief2b, FraudByType } from "@/lib/types";
+import { buildBrief2bMerchantMixRows, merchantMixToChartData } from "@/lib/brief2bMerchantChart";
 
 interface Props {
   data: Brief2b;
@@ -18,21 +26,18 @@ const fmtM = (n: number) => {
   return `£${n}`;
 };
 
-const Tip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: "#fff", border: "1px solid #e8e8ed", borderRadius: 10, padding: "10px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-      <p style={{ fontSize: 12, color: "#6b6b80", marginBottom: 4 }}>{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ fontSize: 13, fontWeight: 600, color: p.color }}>
-          {p.name}: {p.value}%
-        </p>
-      ))}
-    </div>
-  );
-};
-
 export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatus }: Props) {
+  const fraudTop = data.kyc_fraud_merchant_top ?? [];
+  const legitTop = data.kyc_legit_merchant_top ?? [];
+  const merchantRows = buildBrief2bMerchantMixRows(fraudTop, legitTop, 10);
+  const merchantChartData = merchantMixToChartData(merchantRows);
+  const pendingTot = kycStatus.PENDING ?? 0;
+  const pendingFraud = kycFraudStatus.PENDING ?? 0;
+  const failedTot = kycStatus.FAILED ?? 0;
+  const failedFraud = kycFraudStatus.FAILED ?? 0;
+  const pendingFraudRate = pendingTot ? Math.round((pendingFraud / pendingTot) * 10000) / 100 : 0;
+  const failedFraudRate = failedTot ? Math.round((failedFraud / failedTot) * 10000) / 100 : 0;
+
   const txnTypes = ["CARD_PAYMENT", "TOPUP", "ATM", "BANK_TRANSFER", "P2P"];
   const shortLabels: Record<string, string> = {
     CARD_PAYMENT: "Card", TOPUP: "Top-up", ATM: "ATM", BANK_TRANSFER: "Transfer", P2P: "P2P",
@@ -69,7 +74,7 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
       tag="Brief 2B"
       tagColor="black"
       title="KYC-Passed Fraudsters — Behavioural Patterns"
-      subtitle={`${fmt(data.fraud_count)} fraudulent transactions from users who passed KYC. Compared against ${fmt(data.legit_count)} legitimate KYC-passed users.`}
+      subtitle={`${fmt(data.fraud_count)} fraudulent transactions from users who passed KYC. Compared against ${fmt(data.legit_count)} legitimate KYC-passed users. Merchant-country tables and PENDING/FAILED rates support velocity and limit recommendations below.`}
     >
       {/* Alert bar */}
       <div style={{
@@ -144,9 +149,12 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
               );
             })}
             <div style={{ padding: "10px 14px", borderRadius: 10, background: "#f9f9fb", border: "1px solid #e8e8ed", display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13, fontWeight: 500 }}>Avg Birth Year</span>
-              <span style={{ fontSize: 13, color: "#6b6b80" }}>
-                Fraud <strong style={{ color: "#dc2626" }}>{data.fraud_avg_birth}</strong> · Legit <strong style={{ color: "#4f46e5" }}>{data.legit_avg_birth}</strong>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>Median txn · birth</span>
+              <span style={{ fontSize: 12, color: "#6b6b80", textAlign: "right" }}>
+                {fmtM(data.fraud_median_txn_amount ?? data.fraud_avg_amount)} / {fmtM(data.legit_median_txn_amount ?? data.legit_avg_amount)}
+                <span style={{ display: "block", marginTop: 4 }}>
+                  Birth {data.fraud_median_birth_year ?? data.fraud_avg_birth} · {data.legit_median_birth_year ?? data.legit_avg_birth}
+                </span>
               </span>
             </div>
           </div>
@@ -165,10 +173,22 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
             <Tooltip
               content={({ active, payload, label }) =>
                 active && payload?.length ? (
-                  <div style={{ background: "#fff", border: "1px solid #e8e8ed", borderRadius: 10, padding: "10px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-                    <p style={{ fontSize: 12, color: "#6b6b80", marginBottom: 2 }}>{label}</p>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#dc2626" }}>Fraud Rate: {payload[0].value}%</p>
-                  </div>
+                  <ChartTooltipRoot>
+                    {label != null && label !== "" && <ChartTooltipTitle>{label}</ChartTooltipTitle>}
+                    <ChartTooltipRows>
+                      <ChartTooltipRow
+                        label="Fraud rate"
+                        value={`${payload[0].value}%`}
+                        valueColor={
+                          Number(payload[0].value) > 5
+                            ? "#dc2626"
+                            : Number(payload[0].value) > 2
+                              ? "#d97706"
+                              : "#4f46e5"
+                        }
+                      />
+                    </ChartTooltipRows>
+                  </ChartTooltipRoot>
                 ) : null
               }
             />
@@ -195,12 +215,92 @@ export default function KYCSection({ data, fraudByType, kycStatus, kycFraudStatu
                   {r.status}
                 </p>
                 <p style={{ fontSize: 22, fontWeight: 750, color: "#0a0a0f", letterSpacing: "-0.02em" }}>{fmt(r.total)}</p>
+                <p style={{ fontSize: 11, color: "#9898ac", marginTop: 2 }}>transactions</p>
                 <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 600, marginTop: 4 }}>{fmt(r.fraud)} fraud</p>
                 <p style={{ fontSize: 11, color: "#9898ac", marginTop: 2 }}>{rate}% rate</p>
               </div>
             );
           })}
         </div>
+      </div>
+
+      <div style={{ marginTop: 28 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Merchant country mix (% of cohort txns)
+        </p>
+        <div style={{ border: "1px solid #e8e8ed", borderRadius: 12, overflow: "hidden" }}>
+          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f9f9fb", borderBottom: "1px solid #e8e8ed" }}>
+                {["Country", "Fraud %", "n", "Legit %", "n"].map((h, hi) => (
+                  <th key={`merchant-mix-${hi}`} style={{ padding: "10px 14px", textAlign: h === "Country" ? "left" : "right", fontWeight: 700, color: "#6b6b80", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {merchantRows.map((row, i) => (
+                <tr key={row.country} style={{ borderBottom: i < merchantRows.length - 1 ? "1px solid #f0f0f0" : "none" }}>
+                  <td style={{ padding: "10px 14px", fontWeight: 500 }}>{row.country}</td>
+                  <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: "#cf1322" }}>{row.fraudPct}%</td>
+                  <td style={{ padding: "10px 14px", textAlign: "right", color: "#9898ac" }}>{fmt(row.fraudN)}</td>
+                  <td style={{ padding: "10px 14px", textAlign: "right" }}>{row.legitPct}%</td>
+                  <td style={{ padding: "10px 14px", textAlign: "right", color: "#9898ac" }}>{fmt(row.legitN)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#6b6b80", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Merchant country distribution
+        </p>
+        <div style={{ border: "1px solid #e8e8ed", borderRadius: 12, padding: "16px 12px 8px", background: "#fff" }}>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={merchantChartData} margin={{ top: 4, right: 8, left: 0, bottom: 52 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f5" vertical={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fill: "#6b6b80", fontSize: 10 }}
+                axisLine={{ stroke: "#e8e8ed" }}
+                tickLine={false}
+                interval={0}
+                angle={-38}
+                textAnchor="end"
+                height={64}
+              />
+              <YAxis tick={{ fill: "#9898ac", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+              <Tooltip
+                content={(props) =>
+                  props.active && props.payload?.length ? (
+                    <ChartTooltipFromPayload {...props} formatValue={(v) => `${Number(v).toFixed(1)}%`} />
+                  ) : null
+                }
+              />
+              <Legend wrapperStyle={{ fontSize: 11, color: "#9898ac" }} />
+              <Bar name="KYC-passed fraudsters" dataKey="fraudsters" fill="#cf1322" radius={[3, 3, 0, 0]} maxBarSize={26} />
+              <Bar name="KYC-passed legitimate users" dataKey="legitimate" fill="#0f0f0f" radius={[3, 3, 0, 0]} maxBarSize={26} />
+            </BarChart>
+          </ResponsiveContainer>
+          <p style={{ fontSize: 11, color: "#9898ac", fontStyle: "italic", textAlign: "center", margin: "4px 0 0" }}>
+            Share of cohort transactions by merchant country.
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: 24,
+        background: "#f9f9f9",
+        border: "1px solid #e8e8ed",
+        borderLeft: "3px solid #cf1322",
+        borderRadius: 14,
+        padding: "18px 20px",
+      }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: "#9898ac", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Recommendation</p>
+        <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6, margin: 0 }}>
+          Add velocity on top-up → ATM / transfer and tighten limits while KYC is PENDING. Here, <strong style={{ color: "#cf1322" }}>{pendingFraudRate}%</strong> of PENDING-tagged txns are fraud-labelled ({fmt(pendingFraud)} / {fmt(pendingTot)}) vs <strong>{failedFraudRate}%</strong> on FAILED ({fmt(failedFraud)} / {fmt(failedTot)}). Pair with merchant-country skew from the chart above — including secondary verification on large top-ups followed quickly by cash-out rails.
+        </p>
       </div>
     </SectionCard>
   );

@@ -51,7 +51,7 @@ export default function UploadPage({ onAnalytics }: { onAnalytics: (d: Analytics
   };
 
   return (
-    <div style={{ padding: "48px 56px", maxWidth: 720, margin: "0 auto" }}>
+    <div style={{ padding: "48px 56px", maxWidth: 1100, margin: "0 auto" }}>
       <PageHeader
         title="Upload Dataset"
         description="Upload a CSV or Excel file to refresh all dashboard sections. Processing runs entirely in your browser — no data is uploaded to any server."

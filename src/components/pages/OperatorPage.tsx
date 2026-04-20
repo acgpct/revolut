@@ -1,6 +1,8 @@
 "use client";
 
 import type { Analytics } from "@/lib/types";
+import MethodHint from "@/components/ui/MethodHint";
+import { pageSubtitleParagraphStyle } from "@/components/ui/pageSubtitle";
 import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 
 const fmt  = (n: number) => n.toLocaleString();
@@ -75,11 +77,22 @@ export default function OperatorPage({ data }: Props) {
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a3a3a3", marginBottom: 8 }}>
           Operator&apos;s Lens
         </p>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#0f0f0f", letterSpacing: "-0.03em", marginBottom: 10 }}>
-          Priority Matrix & Forward-Looking Model
-        </h1>
-        <p style={{ fontSize: 14, color: "#737373", lineHeight: 1.6, maxWidth: 640 }}>
-          Ranked by ease of implementation vs financial impact.
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+          <h1 style={{ flex: "1 1 auto", fontSize: 28, fontWeight: 800, color: "#0f0f0f", letterSpacing: "-0.03em", margin: 0 }}>
+            Priority Matrix & Forward-Looking Model
+          </h1>
+          <MethodHint label="Matrix method">
+            <p style={{ fontWeight: 600, marginBottom: 8 }}>How to read the grid</p>
+            <p style={{ margin: 0, lineHeight: 1.6 }}>
+              Axes are deliberately coarse: “easy” still means change management (REC 1 touches how the firm talks about growth). “Hard” reflects engineering and policy work for TM rules (REC 3). The forward-looking block uses the #1 actor’s observed run rate and a 6-month window assumption to illustrate order-of-magnitude exposure — a committee communication device, not a forecast model.
+            </p>
+          </MethodHint>
+        </div>
+        <p style={pageSubtitleParagraphStyle}>
+          <strong style={{ color: "#171717" }}>Context.</strong> Rank actions by ease vs financial impact: top-left for immediate wins, top-right for sponsored roadmaps, bottom row for reporting hygiene that still prevents bad planning.
+        </p>
+        <p style={{ ...pageSubtitleParagraphStyle, marginTop: 12, color: "#404040", fontWeight: 500 }}>
+          <strong style={{ color: "#171717" }}>Recommendation.</strong> Sequence REC 1–4 using the matrix together with the exposure strip below, and brief leadership using the same “monitoring in motion” narrative as the report’s executive summary.
         </p>
       </div>
 

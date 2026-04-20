@@ -1,29 +1,13 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { ChartTooltipFromPayload } from "@/components/ui/ChartTooltip";
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
 import type { Brief1 } from "@/lib/types";
 import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 
 const fmt = (n: number | undefined | null) => (n ?? 0).toLocaleString();
-
-const ChartTip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: "#fff", border: "1px solid #ebebeb", borderRadius: 10,
-      padding: "10px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", fontSize: 12,
-    }}>
-      <p style={{ fontWeight: 600, color: "#171717", marginBottom: 6 }}>{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: "#737373" }}>
-          {p.name}: <span style={{ fontWeight: 600, color: "#0f0f0f" }}>{fmt(p.value)}</span>
-        </p>
-      ))}
-    </div>
-  );
-};
 
 export default function ConversionPage({ data }: { data: Brief1 }) {
   const txnData = data.txn_types.map((t) => ({
@@ -48,7 +32,20 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
       <PageHeader
         overline="Brief 1"
         title="App Conversion Rate"
-        description={`A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's ${data.marketing_rate}% inflates this by using a smaller denominator (KYC-attempted users) and including fraudulent card payments.`}
+        description={`Marketing’s ${data.marketing_rate}% headline rate and the economics-grade ${data.strict_rate ?? data.revolut_rate}% rate answer different questions; using the wrong one for payback or risk silently misallocates spend.`}
+        recommendation="Publish both KPIs with explicit labels, require non-fraud legitimate card payments in the strict numerator, and anchor Finance and Growth packs to the strict definition."
+        methodology={
+          <>
+            <p style={{ fontWeight: 600, marginBottom: 8 }}>Definitions</p>
+            <p style={{ margin: "0 0 10px", lineHeight: 1.6 }}>
+              <strong>Strict “converted”</strong>: KYC-passed user with ≥1 <em>legitimate</em> card payment (interchange).{" "}
+              <strong>Marketing-style rate</strong>: card users (including fraudulent card spend) ÷ KYC-attempted users — smaller denominator than all registered users and a numerator that does not map 1:1 to revenue.
+            </p>
+            <p style={{ margin: 0, lineHeight: 1.6 }}>
+              Funnel steps: registered → topped up → KYC passed → legitimate card payment → Revolut converted (true). Ghost users = counted toward marketing reach but excluded from strict converted.
+            </p>
+          </>
+        }
       />
 
       {/* Rate comparison */}
@@ -117,18 +114,18 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
             {gap}pp gap between marketing and the correct conversion rate
           </p>
           <p style={{ fontSize: 13, color: "#737373", lineHeight: 1.6 }}>
-            Marketing's {data.marketing_rate ?? 0}% uses <strong style={{ color: "#404040" }}>card users ÷ KYC-attempted</strong> — a smaller denominator that inflates the rate,
-            and a numerator that includes fraudulent card payments.
-            The strict definition uses <strong style={{ color: "#404040" }}>KYC-passed ∩ ≥1 legitimate card payment ÷ all users</strong>,
-            giving {data.strict_rate}%. Only {fmt(data.strict_converted_users ?? 0)} of {fmt(data.unique_users)} users
-            are genuinely converted; the remaining {fmt(notTrueConvertedUserCount(data))} registered accounts have not reached that bar (same headcount used in the PDF report). Note: this dataset contains no date column, so the 30-day window condition cannot be applied.
+            Only {fmt(data.strict_converted_users ?? 0)} of {fmt(data.unique_users)} users meet the strict converted bar; {fmt(notTrueConvertedUserCount(data))} registered accounts do not. Full numerator and denominator rules for each headline rate are in the <strong>Method</strong> tooltip on the page title (this extract has no date column, so a 30-day window is not applied).
           </p>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 3fr", gap: 16 }}>
         {/* Funnel */}
-        <Panel title="User Funnel">
+        <Panel
+          title="User Funnel"
+          description="Progressive narrowing from all registered users to strict converted."
+          methodology="Steps: Registered → Topped up → KYC passed → Legitimate card payment → Revolut converted (true). Percentages are share of all registered users in this extract."
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {funnelSteps.map((s, i) => (
               <div key={s.label}>
@@ -163,12 +160,21 @@ export default function ConversionPage({ data }: { data: Brief1 }) {
         </Panel>
 
         {/* Chart */}
-        <Panel title="Volume by Transaction Type" description="Legitimate vs fraudulent">
+        <Panel
+          title="Volume by Transaction Type"
+          description="Legitimate vs fraud transaction counts by channel."
+          methodology="Each stack sums row counts for that TYPE with fraud vs non-fraud labels — volume concentration, not implied fraud rate (use fraud-by-type rates elsewhere for that)."
+        >
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={txnData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <XAxis dataKey="name" tick={{ fill: "#a3a3a3", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#a3a3a3", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip content={<ChartTip />} cursor={{ fill: "#fafafa" }} />
+              <Tooltip
+                content={(props) => (
+                  <ChartTooltipFromPayload {...props} formatValue={(v) => (typeof v === "number" ? fmt(v) : String(v))} />
+                )}
+                cursor={{ fill: "#fafafa" }}
+              />
               <Bar dataKey="Legitimate" stackId="a" fill="#f0f0f0" />
               <Bar dataKey="Fraud" stackId="a" fill="#0f0f0f" radius={[3, 3, 0, 0]} />
             </BarChart>

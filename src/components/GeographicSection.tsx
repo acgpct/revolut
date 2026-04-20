@@ -1,10 +1,17 @@
 "use client";
 
+import {
+  ChartTooltipRoot,
+  ChartTooltipTitle,
+  ChartTooltipRows,
+  ChartTooltipRow,
+} from "@/components/ui/ChartTooltip";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import SectionCard from "./SectionCard";
-import type { GeoRisk } from "@/lib/types";
+import GeographicRiskBubbleChart from "./GeographicRiskBubbleChart";
+import type { Brief2a } from "@/lib/types";
 
-interface Props { data: GeoRisk[] }
+interface Props { data: Brief2a }
 
 const fmt  = (n: number) => n.toLocaleString();
 const fmtM = (n: number) => {
@@ -13,27 +20,30 @@ const fmtM = (n: number) => {
   return `£${n}`;
 };
 
-const Tip = ({ active, payload }: any) => {
+const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: { country: string; fraud: number; rate: number; fraud_amount: number; total: number } }[] }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div style={{ background: "#fff", border: "1px solid #e8e8ed", borderRadius: 10, padding: "12px 16px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", minWidth: 170 }}>
-      <p style={{ fontWeight: 700, marginBottom: 6 }}>{d.country}</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        <p style={{ fontSize: 12, color: "#6b6b80" }}>Fraud txns: <strong style={{ color: "#e53e3e" }}>{fmt(d.fraud)}</strong></p>
-        <p style={{ fontSize: 12, color: "#6b6b80" }}>Fraud rate: <strong style={{ color: "#d97706" }}>{d.rate}%</strong></p>
-        <p style={{ fontSize: 12, color: "#6b6b80" }}>Fraud loss: <strong style={{ color: "#e53e3e" }}>{fmtM(d.fraud_amount)}</strong></p>
-        <p style={{ fontSize: 12, color: "#6b6b80" }}>Total txns: {fmt(d.total)}</p>
-      </div>
-    </div>
+    <ChartTooltipRoot style={{ minWidth: 188 }}>
+      <ChartTooltipTitle>{d.country}</ChartTooltipTitle>
+      <ChartTooltipRows>
+        <ChartTooltipRow label="Fraud txns" value={fmt(d.fraud)} valueColor="#cf1322" />
+        <ChartTooltipRow label="Fraud rate" value={`${d.rate}%`} valueColor="#ad6800" />
+        <ChartTooltipRow label="Fraud loss" value={fmtM(d.fraud_amount)} valueColor="#cf1322" />
+        <ChartTooltipRow label="Total txns" value={fmt(d.total)} />
+      </ChartTooltipRows>
+    </ChartTooltipRoot>
   );
 };
 
 const shortLabel = (c: string) => c === "Unknown / Null" ? "N/A" : c;
 
 export default function GeographicSection({ data }: Props) {
-  const top8   = data.slice(0, 8);
-  const byRate = [...data].sort((a, b) => b.rate - a.rate).slice(0, 8);
+  const geo    = data.geo_risk;
+  const mfLoss = data.fraud_amount_merchant_facing ?? 0;
+  const pfLoss = data.fraud_amount_platform ?? 0;
+  const top8   = geo.slice(0, 8);
+  const byRate = [...geo].sort((a, b) => b.rate - a.rate).slice(0, 8);
 
   const top8Chart   = top8.map(r   => ({ ...r, country: shortLabel(r.country) }));
   const byRateChart = byRate.map(r => ({ ...r, country: shortLabel(r.country) }));
@@ -43,8 +53,21 @@ export default function GeographicSection({ data }: Props) {
       tag="Brief 2A"
       tagColor="black"
       title="Geographic Risk Exposure"
-      subtitle="Distinguishing between high-volume (number of attacks) and high-probability (fraud rate) countries."
+      subtitle="Distinguishing between high-volume (number of attacks) and high-probability (fraud rate) countries. Sparse corridors (under 50 txns) are filtered out. Pair the map with the merchant-facing vs platform loss split so bank-transfer risk is not read as purely geographic."
     >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+        <div style={{ background: "#fafafa", border: "1px solid #e8e8ed", borderRadius: 12, padding: "16px 18px" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#9898ac", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Merchant-facing · CARD + ATM</p>
+          <p style={{ fontSize: 28, fontWeight: 800, color: "#0a0a0f" }}>{fmtM(mfLoss)}</p>
+          <p style={{ fontSize: 12, color: "#6b6b80", marginTop: 6, lineHeight: 1.5 }}>Geographic controls primary.</p>
+        </div>
+        <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 18px" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#9b1c1c", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Platform · TOPUP + P2P + BT</p>
+          <p style={{ fontSize: 28, fontWeight: 800, color: "#dc2626" }}>{fmtM(pfLoss)}</p>
+          <p style={{ fontSize: 12, color: "#6b6b80", marginTop: 6, lineHeight: 1.5 }}>Behavioural / velocity controls — Brief 2B transfer risk lives here.</p>
+        </div>
+      </div>
+
       {/* Callout cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div style={{ background: "#fff1f1", borderRadius: 14, padding: "20px 22px" }}>
@@ -73,6 +96,18 @@ export default function GeographicSection({ data }: Props) {
         </p>
       </div>
 
+      <div
+        style={{
+          background: "#fafafa",
+          border: "1px solid #e8e8ed",
+          borderRadius: 12,
+          padding: "18px 20px 14px",
+          marginBottom: 28,
+        }}
+      >
+        <GeographicRiskBubbleChart geo={geo} height={340} />
+      </div>
+
       {/* Two charts side by side */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         <div>
@@ -82,7 +117,7 @@ export default function GeographicSection({ data }: Props) {
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={top8Chart} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#9898ac", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={36} />
+              <YAxis type="category" dataKey="country" interval={0} tick={{ fill: "#0a0a0f", fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={56} />
               <Tooltip content={<Tip />} />
               <Bar dataKey="fraud" radius={[0, 6, 6, 0]}>
                 {top8Chart.map((e, i) => (
@@ -99,7 +134,7 @@ export default function GeographicSection({ data }: Props) {
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={byRateChart} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#9898ac", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-              <YAxis type="category" dataKey="country" tick={{ fill: "#0a0a0f", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={36} />
+              <YAxis type="category" dataKey="country" interval={0} tick={{ fill: "#0a0a0f", fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={56} />
               <Tooltip content={<Tip />} />
               <Bar dataKey="rate" radius={[0, 6, 6, 0]}>
                 {byRateChart.map((e, i) => (

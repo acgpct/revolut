@@ -384,9 +384,15 @@ export default function Dashboard() {
             <>
               {activePage === "overview"  && <OverviewPage   data={analytics} />}
               {activePage === "brief1"    && <ConversionPage data={analytics.brief1} />}
-              {activePage === "brief2a"   && <GeographicPage data={analytics.brief2a.geo_risk} />}
+              {activePage === "brief2a"   && <GeographicPage data={analytics.brief2a} />}
               {activePage === "brief2b"   && <KYCPage        data={analytics.brief2b} fraudByType={analytics.fraud_by_type} kycStatus={analytics.kyc_status} kycFraudStatus={analytics.kyc_fraud_status} />}
-              {activePage === "bonus"     && <FraudstersPage fraudsters={analytics.bonus.top_fraudsters} totalFraudsters={analytics.bonus.total_fraudsters} />}
+              {activePage === "bonus"     && (
+                <FraudstersPage
+                  fraudsters={analytics.bonus.top_fraudsters}
+                  byAmount={analytics.bonus.top_fraudsters_by_amount}
+                  totalFraudsters={analytics.bonus.total_fraudsters}
+                />
+              )}
               {activePage === "operator"  && <OperatorPage   data={analytics} />}
               {activePage === "upload"    && <UploadPage     onAnalytics={handleNewData} />}
             </>

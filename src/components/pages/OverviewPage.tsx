@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { ChartTooltipFromPayload } from "@/components/ui/ChartTooltip";
 import MetricCard from "@/components/ui/MetricCard";
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
@@ -11,28 +12,6 @@ const fmtB = (n: number) => {
   if (n >= 1_000_000_000) return `£${(n / 1_000_000_000).toFixed(1)}B`;
   if (n >= 1_000_000)     return `£${(n / 1_000_000).toFixed(0)}M`;
   return `£${(n / 1_000).toFixed(0)}K`;
-};
-
-const ChartTip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: "#fff",
-      border: "1px solid #ebebeb",
-      borderRadius: 10,
-      padding: "10px 14px",
-      boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-      fontSize: 12,
-    }}>
-      <p style={{ fontWeight: 600, color: "#171717", marginBottom: 6 }}>{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: "#737373" }}>
-          {p.name}:{" "}
-          <span style={{ fontWeight: 600, color: "#0f0f0f" }}>{fmt(p.value)}</span>
-        </p>
-      ))}
-    </div>
-  );
 };
 
 export default function OverviewPage({ data }: { data: Analytics }) {
@@ -48,7 +27,16 @@ export default function OverviewPage({ data }: { data: Analytics }) {
     <div style={{ padding: "48px 56px", maxWidth: 1100, margin: "0 auto" }}>
       <PageHeader
         title="Financial Crime Overview"
-        description="High-level summary of transaction volume, fraud exposure, and conversion metrics across the full dataset."
+        description="Single-dataset view of volume, fraud exposure, and conversion pressure so leadership can align growth, risk, and TM investment."
+        recommendation="Treat post-onboarding transaction monitoring as the structural complement to KYC — see the executive summary at the foot of this page for assessment and priority."
+        methodology={
+          <>
+            <p style={{ fontWeight: 600, marginBottom: 8 }}>Figure & metrics</p>
+            <p style={{ margin: 0, lineHeight: 1.6 }}>
+              Volume chart stacks legitimate vs fraud <em>transaction counts</em> by <code>TYPE</code> — tall bars show activity mix, not implied fraud rate. KPIs use row-level fraud labels and amounts in the source currency scale (GBP display where shown).
+            </p>
+          </>
+        }
       />
 
       {/* KPI row 1 — volume */}
@@ -96,7 +84,11 @@ export default function OverviewPage({ data }: { data: Analytics }) {
       </div>
 
       {/* Chart */}
-      <Panel title="Volume by Transaction Type" description="Legitimate vs fraud transactions per category">
+      <Panel
+        title="Volume by Transaction Type"
+        description="Where operational load and fraud-labelled volume concentrate by channel."
+        methodology="Stacked bars count transactions per TYPE; grey = non-fraud-labelled, black = fraud-labelled rows in the extract."
+      >
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={typeData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} barGap={2}>
             <XAxis
@@ -111,7 +103,12 @@ export default function OverviewPage({ data }: { data: Analytics }) {
               tickLine={false}
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
             />
-            <Tooltip content={<ChartTip />} cursor={{ fill: "#fafafa" }} />
+            <Tooltip
+              content={(props) => (
+                <ChartTooltipFromPayload {...props} formatValue={(v) => (typeof v === "number" ? fmt(v) : String(v))} />
+              )}
+              cursor={{ fill: "#fafafa" }}
+            />
             <Bar dataKey="Legitimate" stackId="a" fill="#f0f0f0" />
             <Bar dataKey="Fraud" stackId="a" fill="#0f0f0f" radius={[3, 3, 0, 0]} />
           </BarChart>
@@ -128,7 +125,7 @@ export default function OverviewPage({ data }: { data: Analytics }) {
         </div>
       </Panel>
 
-      {/* Strategic synthesis */}
+      {/* Executive summary */}
       <div style={{
         marginTop: 24,
         padding: "24px 28px",
@@ -138,15 +135,18 @@ export default function OverviewPage({ data }: { data: Analytics }) {
         background: "#fafafa",
       }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#a3a3a3", marginBottom: 10 }}>
-          Strategic Synthesis
+          Executive summary
         </p>
         <p style={{ fontSize: 14, color: "#171717", lineHeight: 1.75, maxWidth: 820 }}>
-          Taken together, these findings reveal a single systemic gap: Revolut&apos;s defences are calibrated to stop fraud{" "}
-          <em>at the gate</em> (KYC) rather than <em>in motion</em>. The conversion inflation, the geographic blind spot,
-          the KYC bypass pattern, and the persistence of top actors all point to the same root cause —{" "}
-          <strong>post-onboarding behavioural monitoring is absent.</strong>{" "}
-          Fixing any one of these in isolation treats a symptom. Addressing the root cause — real-time transaction-level
-          anomaly detection layered on top of identity verification — resolves all four simultaneously.
+          <strong style={{ fontWeight: 600 }}>Assessment.</strong> Controls are strongest at customer onboarding (KYC) and comparatively
+          weaker on ongoing transaction behaviour. Conversion pressure, geographic exposure in merchant-facing flows, KYC-status
+          exploitation, and sustained high-volume fraud actors are directionally consistent with a material gap in{" "}
+          <strong>post-onboarding behavioural monitoring</strong>.
+        </p>
+        <p style={{ fontSize: 14, color: "#171717", lineHeight: 1.75, maxWidth: 820, marginTop: 12, marginBottom: 0 }}>
+          <strong style={{ fontWeight: 600 }}>Recommendation.</strong> Prioritise real-time, transaction-level anomaly detection layered on
+          identity verification, rather than addressing each signal in isolation. That design choice closes the underlying control gap
+          across the indicators above.
         </p>
       </div>
     </div>

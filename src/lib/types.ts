@@ -43,6 +43,24 @@ export interface GeoRisk {
   total_amount: number;
 }
 
+/** Brief 2A: country-level geo plus global fraud-loss split by channel class (fraud rows only). */
+export interface Brief2a {
+  geo_risk: GeoRisk[];
+  /** Sum of `AMOUNT` on fraud rows with `TYPE` ∈ { CARD_PAYMENT, ATM } — merchant-present / cash-out; geographic controls primary. */
+  fraud_amount_merchant_facing: number;
+  /** Sum of `AMOUNT` on fraud rows with `TYPE` ∈ { TOPUP, P2P, BANK_TRANSFER } — on-platform rails; velocity / behavioural controls primary. */
+  fraud_amount_platform: number;
+  /** Fraud rows outside the five canonical types (omitted if zero). */
+  fraud_amount_other_channels?: number;
+}
+
+/** Top merchant countries by transaction count for a cohort (all txns for those users). */
+export interface MerchantCountryMixRow {
+  country: string;
+  txns: number;
+  pct: number;
+}
+
 export interface Brief2b {
   // User counts
   kyc_fraud_users: number;       // KYC-passed users who are fraudsters (260)
@@ -56,6 +74,10 @@ export interface Brief2b {
   // Per-transaction averages
   fraud_avg_amount: number;
   legit_avg_amount: number;
+  /** Median `AMOUNT` on fraud-labelled txns (KYC-fraud user cohort). */
+  fraud_median_txn_amount?: number;
+  /** Median `AMOUNT` on legit-labelled txns (KYC-legit user cohort). */
+  legit_median_txn_amount?: number;
   // Per-user behavioural averages
   fraud_avg_txns_per_user: number;
   legit_avg_txns_per_user: number;
@@ -64,6 +86,13 @@ export interface Brief2b {
   // Demographics
   fraud_avg_birth: number;
   legit_avg_birth: number;
+  /** Median birth year (per user first-seen) — KYC-fraud cohort. */
+  fraud_median_birth_year?: number;
+  legit_median_birth_year?: number;
+  /** Top N `MERCHANT_COUNTRY` by txn count for all txns from KYC-passed fraudster users. */
+  kyc_fraud_merchant_top?: MerchantCountryMixRow[];
+  /** Top N merchant countries for all txns from KYC-passed legitimate users. */
+  kyc_legit_merchant_top?: MerchantCountryMixRow[];
 }
 
 export interface Fraudster {
@@ -75,7 +104,18 @@ export interface Fraudster {
   countries_hit: number;
   kyc: string;
   type_breakdown: Record<string, number>;
+  /**
+   * Composite score 0–100 (1 d.p.), matching fin_crime_audit.pdf:
+   * 0.35·value + 0.30·fraud_txns + 0.15·fraud_rate + 0.10·type_diversity + 0.10·country_diversity
+   * (each input normalised 0–1 across all fraud actors).
+   */
   score: number;
+  /** Weighted slice of score/100 — stacked “decomposed by dimension” chart (omit in legacy snapshots). */
+  w_value?: number;
+  w_txns?: number;
+  w_rate?: number;
+  w_types?: number;
+  w_geo?: number;
 }
 
 export interface FraudByType {
@@ -89,13 +129,15 @@ export interface FraudByType {
 export interface Analytics {
   overview: Overview;
   brief1: Brief1;
-  brief2a: { geo_risk: GeoRisk[] };
+  brief2a: Brief2a;
   brief2b: Brief2b;
   kyc_status: Record<string, number>;
   kyc_fraud_status: Record<string, number>;
   fraud_by_type: FraudByType[];
   bonus: {
     top_fraudsters: Fraudster[];
+    /** Top 5 by raw fraud £ (minor units), naive ranking — optional in older analytics.json. */
+    top_fraudsters_by_amount?: Fraudster[];
     total_fraudsters: number;
   };
 }

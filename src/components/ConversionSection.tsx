@@ -1,5 +1,6 @@
 "use client";
 
+import { ChartTooltipFromPayload } from "@/components/ui/ChartTooltip";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
 import SectionCard from "./SectionCard";
 import type { Brief1 } from "@/lib/types";
@@ -8,20 +9,6 @@ import { notTrueConvertedUserCount } from "@/lib/brief1Metrics";
 const fmt = (n: number | undefined | null) => (n ?? 0).toLocaleString();
 
 interface Props { data: Brief1 }
-
-const Tip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: "#fff", border: "1px solid #e8e8ed", borderRadius: 10, padding: "10px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-      <p style={{ fontSize: 12, color: "#6b6b80", marginBottom: 4 }}>{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ fontSize: 13, fontWeight: 600, color: p.color }}>
-          {p.name}: {fmt(p.value)}
-        </p>
-      ))}
-    </div>
-  );
-};
 
 export default function ConversionSection({ data }: Props) {
   const txnTypeData = data.txn_types.map((t) => ({
@@ -44,7 +31,7 @@ export default function ConversionSection({ data }: Props) {
       tag="Brief 1"
       tagColor="black"
       title="Growth Audit — App Conversion Rate"
-      subtitle="A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's headline rate inflates the numerator (any card activity, including fraud) and uses a smaller denominator (KYC-attempted only)."
+      subtitle="A converted user must pass KYC and make ≥1 legitimate card payment (interchange revenue). Marketing's headline rate inflates the numerator (any card activity, including fraud) and uses a smaller denominator (KYC-attempted only). Recommendation: label both rates in every growth report so CAC and fraud budgets do not silently diverge."
     >
       {/* Rate comparison */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -113,7 +100,11 @@ export default function ConversionSection({ data }: Props) {
           <BarChart data={txnTypeData} margin={{ top: 0, right: 0, left: -10, bottom: 0 }} barGap={4}>
             <XAxis dataKey="name" tick={{ fill: "#9898ac", fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: "#9898ac", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-            <Tooltip content={<Tip />} />
+            <Tooltip
+              content={(props) => (
+                <ChartTooltipFromPayload {...props} formatValue={(v) => (typeof v === "number" ? fmt(v) : String(v))} />
+              )}
+            />
             <Legend wrapperStyle={{ fontSize: 12, color: "#6b6b80", paddingTop: 8 }} />
             <Bar dataKey="Legitimate" stackId="a" fill="#c7d2fe" radius={[0, 0, 0, 0]} />
             <Bar dataKey="Fraud" stackId="a" fill="#4f46e5" radius={[4, 4, 0, 0]} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { pageSubtitleParagraphStyle } from "./ui/pageSubtitle";
 
 interface SectionCardProps {
   title: string;
@@ -51,7 +52,7 @@ export default function SectionCard({ title, subtitle, tag, tagColor = "black", 
           </h2>
         </div>
         {subtitle && (
-          <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.6, maxWidth: 660, letterSpacing: "-0.005em" }}>
+          <p style={pageSubtitleParagraphStyle}>
             {subtitle}
           </p>
         )}

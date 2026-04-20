@@ -1,9 +1,16 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import {
+  ChartTooltipRoot,
+  ChartTooltipTitle,
+  ChartTooltipRows,
+  ChartTooltipRow,
+} from "@/components/ui/ChartTooltip";
+import GeographicRiskBubbleChart from "@/components/GeographicRiskBubbleChart";
 import Panel from "@/components/ui/Panel";
 import PageHeader from "@/components/ui/PageHeader";
-import type { GeoRisk } from "@/lib/types";
+import type { Brief2a } from "@/lib/types";
 
 const fmt  = (n: number) => n.toLocaleString();
 const fmtM = (n: number) => {
@@ -76,35 +83,68 @@ const FlagTick = ({ x, y, payload }: any) => (
   </text>
 );
 
-const ChartTip = ({ active, payload }: any) => {
+const ChartTip = ({ active, payload }: { active?: boolean; payload?: { payload: { country: string; fraud: number; rate: number; fraud_amount: number } }[] }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div style={{
-      background: "#fff", border: "1px solid #ebebeb", borderRadius: 10,
-      padding: "12px 16px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", fontSize: 12, minWidth: 180,
-    }}>
-      <p style={{ fontWeight: 700, color: "#0f0f0f", marginBottom: 8, fontSize: 14 }}>
+    <ChartTooltipRoot style={{ minWidth: 196 }}>
+      <ChartTooltipTitle>
         {flag(d.country)} {name(d.country)}
-      </p>
-      <p style={{ color: "#737373", marginBottom: 2 }}>Fraud txns <span style={{ fontWeight: 600, color: "#0f0f0f" }}>{fmt(d.fraud)}</span></p>
-      <p style={{ color: "#737373", marginBottom: 2 }}>Fraud rate <span style={{ fontWeight: 600, color: "#0f0f0f" }}>{d.rate}%</span></p>
-      <p style={{ color: "#737373" }}>Fraud loss <span style={{ fontWeight: 600, color: "#0f0f0f" }}>{fmtM(d.fraud_amount)}</span></p>
-    </div>
+      </ChartTooltipTitle>
+      <ChartTooltipRows>
+        <ChartTooltipRow label="Fraud txns" value={fmt(d.fraud)} valueColor="#cf1322" />
+        <ChartTooltipRow label="Fraud rate" value={`${d.rate}%`} />
+        <ChartTooltipRow label="Fraud loss" value={fmtM(d.fraud_amount)} valueColor="#cf1322" />
+      </ChartTooltipRows>
+    </ChartTooltipRoot>
   );
 };
 
-export default function GeographicPage({ data }: { data: GeoRisk[] }) {
-  const top10  = data.slice(0, 10);
-  const byRate = [...data].sort((a, b) => b.rate - a.rate).slice(0, 10);
+export default function GeographicPage({ data }: { data: Brief2a }) {
+  const geo    = data.geo_risk;
+  const mfLoss = data.fraud_amount_merchant_facing ?? 0;
+  const pfLoss = data.fraud_amount_platform ?? 0;
+  const top10  = geo.slice(0, 10);
+  const byRate = [...geo].sort((a, b) => b.rate - a.rate).slice(0, 10);
 
   return (
     <div style={{ padding: "48px 56px", maxWidth: 1100, margin: "0 auto" }}>
       <PageHeader
         overline="Brief 2A"
         title="Geographic Risk Exposure"
-        description="Distinguishing high-volume (attack count) from high-probability (fraud rate) countries to support a nuanced global risk strategy."
+        description="High fraud volume and high fraud rate are different control problems; merchant-facing loss (card + ATM) and platform loss (top-up, P2P, transfer) need different owners so geography tiles are not mistaken for the right lever on bank rails."
+        recommendation="Keep two live country views—fraud count vs fraud rate—with separate owners and escalation paths. Route merchant-facing cuts (card + ATM) to acquiring and card risk; route platform loss to TM rule tuning with Brief 2B. Review the ≥50-transactions-per-country floor at least quarterly as volumes grow."
+        methodology={
+          <>
+            <p style={{ fontWeight: 600, marginBottom: 8 }}>Geography & filters</p>
+            <p style={{ margin: 0, lineHeight: 1.6 }}>
+              Charts and tables use <code>MERCHANT_COUNTRY</code> on each row where present. Countries with fewer than 50 transactions are excluded so small-sample noise does not drive policy.{" "}
+              Merchant-facing fraud £ sums card + ATM; platform fraud £ sums top-up, P2P, and bank transfer — aligned to where velocity vs terminal controls apply.
+            </p>
+          </>
+        }
       />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
+        <div style={{ border: "1px solid #0f0f0f", borderRadius: 12, padding: "22px 24px", background: "#fafafa" }}>
+          <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#737373", marginBottom: 10 }}>
+            Merchant-facing fraud · CARD + ATM
+          </p>
+          <p style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f0f0f", lineHeight: 1 }}>{fmtM(mfLoss)}</p>
+          <p style={{ fontSize: 13, color: "#737373", marginTop: 10, lineHeight: 1.55 }}>
+            Fraud <code>AMOUNT</code> on card and ATM tickets — geographic and terminal controls apply.
+          </p>
+        </div>
+        <div style={{ border: "1px solid #cf1322", borderRadius: 12, padding: "22px 24px", background: "#fffafa" }}>
+          <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#a3a3a3", marginBottom: 10 }}>
+            Platform fraud · TOPUP + P2P + bank transfer
+          </p>
+          <p style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#cf1322", lineHeight: 1 }}>{fmtM(pfLoss)}</p>
+          <p style={{ fontSize: 13, color: "#737373", marginTop: 10, lineHeight: 1.55 }}>
+            On-rail fund movement — velocity and behavioural controls apply. Brief 2B bank-transfer signals sit in this bucket, not merchant-country tiles alone.
+          </p>
+        </div>
+      </div>
 
       {/* Callout pair */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
@@ -159,18 +199,35 @@ export default function GeographicPage({ data }: { data: GeoRisk[] }) {
         </p>
       </div>
 
+      <div
+        style={{
+          background: "#ffffff",
+          border: "1px solid #ebebeb",
+          borderRadius: 12,
+          padding: "24px 28px 20px",
+          marginBottom: 32,
+        }}
+      >
+        <GeographicRiskBubbleChart geo={geo} height={400} compact />
+      </div>
+
       {/* Charts */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
-        <Panel title="Top 10 by Fraud Volume">
+        <Panel
+          title="Top 10 by Fraud Volume"
+          description="Operational load: where fraud-labelled transaction counts concentrate."
+          methodology="Countries below the ≥50 transaction threshold in the extract are omitted from this view. Country = MERCHANT_COUNTRY on each row where present."
+        >
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={top10} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#a3a3a3", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} />
               <YAxis
                 type="category"
                 dataKey="country"
+                interval={0}
                 axisLine={false}
                 tickLine={false}
-                width={58}
+                width={76}
                 tick={<FlagTick />}
               />
               <Tooltip content={<ChartTip />} cursor={{ fill: "#fafafa" }} />
@@ -183,16 +240,21 @@ export default function GeographicPage({ data }: { data: GeoRisk[] }) {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Top 10 by Fraud Rate (%)">
+        <Panel
+          title="Top 10 by Fraud Rate (%)"
+          description="Structural risk: where a random transaction is most likely to be fraud-labelled."
+          methodology="Sorted by fraud rate among countries meeting the same ≥50 txn minimum. Independent from the volume ranking."
+        >
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={byRate} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: "#a3a3a3", fontSize: 10, fontFamily: "inherit" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
               <YAxis
                 type="category"
                 dataKey="country"
+                interval={0}
                 axisLine={false}
                 tickLine={false}
-                width={58}
+                width={76}
                 tick={<FlagTick />}
               />
               <Tooltip content={<ChartTip />} cursor={{ fill: "#fafafa" }} />
@@ -207,7 +269,12 @@ export default function GeographicPage({ data }: { data: GeoRisk[] }) {
       </div>
 
       {/* Table */}
-      <Panel title="Country Breakdown" noPad>
+      <Panel
+        title="Country Breakdown"
+        description="Top markets by fraud volume in this filtered set."
+        methodology="Columns follow geo_risk rows: totals and fraud counts use the same MERCHANT_COUNTRY grain and filters as the charts above."
+        noPad
+      >
         <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid #f5f5f5" }}>
