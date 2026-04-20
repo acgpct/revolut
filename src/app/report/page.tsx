@@ -817,9 +817,9 @@ function GeographicRisk({ d }: { d: Analytics }) {
         </div>
       </div>
 
-      <div style={{ border: `1px solid ${RULE}`, borderRadius: 6, padding: "8px 10px 10px", marginBottom: 8 }}>
+      <div style={{ border: `1px solid ${RULE}`, borderRadius: 6, padding: "10px 12px 14px", marginBottom: 10 }}>
         <ChartLabel>Volume vs rate (≥50 txns / country)</ChartLabel>
-        <div style={{ width: "100%", height: 256 }}>
+        <div style={{ width: "100%", marginTop: 4 }}>
           <GeographicRiskBubbleChart
             geo={geo}
             minN={50}

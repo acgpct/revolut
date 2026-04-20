@@ -166,26 +166,6 @@ export default function KYCPage({ data, fraudByType, kycStatus, kycFraudStatus }
         </div>
       )}
 
-      {data.kyc_fraud_row_order_tertile_fraud_share_pct &&
-        data.kyc_fraud_median_row_order_norm != null &&
-        data.kyc_legit_median_row_order_norm != null && (
-          <div style={{ marginBottom: 24 }}>
-          <Panel
-            title="Row-order proxy (no dates)"
-            description="Uses CSV ingest index as a weak proxy for account or extract tenure."
-            methodology="Tertiles split the file into early / mid / late thirds by 0-based row index. Compare median normalised index for fraud- vs legit-labelled cohort rows."
-          >
-            <p style={{ margin: 0, fontSize: 14, color: "#404040", lineHeight: 1.65 }}>
-              Cohort fraud-labelled txns: <strong>{data.kyc_fraud_row_order_tertile_fraud_share_pct[0]}%</strong> /{" "}
-              <strong>{data.kyc_fraud_row_order_tertile_fraud_share_pct[1]}%</strong> /{" "}
-              <strong>{data.kyc_fraud_row_order_tertile_fraud_share_pct[2]}%</strong> in early / middle / late file thirds.
-              Median normalised row index <strong>{data.kyc_fraud_median_row_order_norm}</strong> (fraud rows) vs{" "}
-              <strong>{data.kyc_legit_median_row_order_norm}</strong> (legit rows).
-            </p>
-          </Panel>
-          </div>
-        )}
-
       {data.kyc_fraud_type_merchant_heatmap && (() => {
         const hm = data.kyc_fraud_type_merchant_heatmap;
         const vmax = Math.max(1, ...hm.matrix.flat());
@@ -237,24 +217,6 @@ export default function KYCPage({ data, fraudByType, kycStatus, kycFraudStatus }
           </div>
         );
       })()}
-
-      {typeof data.rec3_rule_flagged_users === "number" &&
-        typeof data.rec3_rule_scope_fraud_txns_fiat_gbp === "number" &&
-        typeof data.fraud_txns_kyc_passed_cohort_fiat_gbp === "number" && (
-          <div style={{ marginBottom: 24 }}>
-          <Panel
-            title="REC 3 static counterfactual"
-            description="Upper bound on review volume if dual-threshold rules fired on user mix (not recovered £)."
-            methodology="All cohort txns per user (fraud+legit). Strict inequalities: ATM/T > 0.25, BANK_TRANSFER/T > 0.15, CARD_PAYMENT/T < 0.45 (P2P excluded from card share). Flag if ≥2 true. Canonical JSON: brief2b.replication.rec3_counterfactual in analytics.json."
-          >
-            <p style={{ margin: 0, fontSize: 14, color: "#404040", lineHeight: 1.65 }}>
-              <strong>{fmt(data.rec3_rule_flagged_users)}</strong> fraud users and{" "}
-              <strong>{fmt(data.rec3_rule_scope_fraud_txns_fiat_gbp)}</strong> of{" "}
-              <strong>{fmt(data.fraud_txns_kyc_passed_cohort_fiat_gbp)}</strong> fiat-convertible cohort fraud txns would sit in automated rule scope.
-            </p>
-          </Panel>
-          </div>
-        )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
         {/* Radar */}

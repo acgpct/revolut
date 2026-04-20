@@ -28,6 +28,42 @@ const fmt = (n: number) => n.toLocaleString();
 
 const shortLabel = (c: string) => (c === "Unknown / Null" ? "N/A" : c);
 
+/** Even fraud-rate ticks for PDF (default tickCount produced uneven steps). */
+function reportAxisYTicks(yMax: number): number[] {
+  const step = yMax <= 10 ? 2 : yMax <= 16 ? 4 : 5;
+  const ticks: number[] = [];
+  for (let t = 0; t <= yMax + 1e-6; t += step) {
+    ticks.push(Math.round(t * 100) / 100);
+  }
+  const last = ticks[ticks.length - 1];
+  if (last < yMax - 1e-3) ticks.push(yMax);
+  return ticks;
+}
+
+/** Log X ticks (1–2–5 × 10ⁿ) so print/PDF shows more than a single edge tick. */
+function reportAxisLogXTicks(lo: number, hi: number): number[] {
+  const a = Math.max(lo, 1);
+  const b = Math.max(hi, a * 1.01);
+  const e0 = Math.floor(Math.log10(a));
+  const e1 = Math.ceil(Math.log10(b));
+  const raw: number[] = [];
+  for (let e = e0; e <= e1; e++) {
+    const p = 10 ** e;
+    for (const m of [1, 2, 5]) {
+      const v = m * p;
+      if (v >= a * 0.88 && v <= b * 1.06) raw.push(v);
+    }
+  }
+  const uniq = [...new Set(raw)].sort((x, y) => x - y);
+  if (uniq.length <= 9) return uniq;
+  const thinned: number[] = [uniq[0]];
+  const gap = (uniq.length - 1) / 6;
+  for (let i = 1; i <= 6; i++) {
+    thinned.push(uniq[Math.min(uniq.length - 1, Math.round(i * gap))]);
+  }
+  return [...new Set(thinned)].sort((x, y) => x - y);
+}
+
 const RED = "#cf1322";
 const AMBER = "#ad6800";
 const BASE = "#b4c5d6";
@@ -40,6 +76,10 @@ export type GeoBubbleRow = GeoRisk & {
   labelCode: string;
   /** PDF/report-panel: draw ISO / extract code on the point (hover unavailable in print). */
   __showPointLabel?: boolean;
+  /** PDF: stagger label around bubble (R/L/T/B) to reduce overlap. */
+  __reportLabelSide?: "R" | "L" | "T" | "B";
+  /** PDF: second ring offset when many highlights share the same side bucket. */
+  __reportLabelSlot?: number;
 };
 
 /** Red = #1 fraud volume; amber = other high-rate or high-volume candidates (matches dual-axis story). */
@@ -103,7 +143,7 @@ function BubbleTip({
   );
 }
 
-/** On-chart country codes: anchor + highlights for print; anchor-only on web. */
+/** On-chart ISO codes: interactive = anchor only; report-panel = anchor + highlights with staggered placement. */
 function GeoBubbleShape(props: ScatterShapeProps) {
   const cx = props.cx != null ? Number(props.cx) : NaN;
   const cy = props.cy != null ? Number(props.cy) : NaN;
@@ -137,22 +177,58 @@ function GeoBubbleShape(props: ScatterShapeProps) {
           {payload.labelCode}
         </text>
       )}
-      {showAmberText && (
-        <text
-          x={cx + r + 3}
-          y={cy + 3}
-          textAnchor="start"
-          fontSize={10}
-          fontWeight={700}
-          fill="#0f0f0f"
-          stroke="rgba(255,255,255,0.9)"
-          strokeWidth={2}
-          paintOrder="stroke fill"
-          style={{ fontFamily: "inherit" }}
-        >
-          {payload.labelCode}
-        </text>
-      )}
+      {showAmberText &&
+        (() => {
+          const side = payload.__reportLabelSide ?? "R";
+          const slot = payload.__reportLabelSlot ?? 0;
+          const pad = 4 + slot * 6;
+          const jitter = (slot % 2) * 4;
+          let nx: number;
+          let ny: number;
+          let ta: "start" | "end" | "middle";
+          switch (side) {
+            case "R":
+              nx = cx + r + pad;
+              ny = cy + 2 + jitter;
+              ta = "start";
+              break;
+            case "L":
+              nx = cx - r - pad;
+              ny = cy + 2 + jitter;
+              ta = "end";
+              break;
+            case "T":
+              nx = cx + jitter - 2;
+              ny = cy - r - 7 - slot * 4;
+              ta = "middle";
+              break;
+            case "B":
+              nx = cx + jitter - 2;
+              ny = cy + r + 9 + slot * 4;
+              ta = "middle";
+              break;
+            default:
+              nx = cx + r + pad;
+              ny = cy + 2;
+              ta = "start";
+          }
+          return (
+            <text
+              x={nx}
+              y={ny}
+              textAnchor={ta}
+              fontSize={9}
+              fontWeight={700}
+              fill="#0f0f0f"
+              stroke="rgba(255,255,255,0.92)"
+              strokeWidth={2}
+              paintOrder="stroke fill"
+              style={{ fontFamily: "inherit" }}
+            >
+              {payload.labelCode}
+            </text>
+          );
+        })()}
     </g>
   );
 }
@@ -172,8 +248,8 @@ type Props = {
   /** When false, omits amber legend + context/recommendation copy below the plot. */
   showPostChartNotes?: boolean;
   /**
-   * `report-panel` — PDF / narrow embed: extra left margin for labels, on-point codes for anchor + highlights,
-   * and a static country legend (no hover). Context/recommendation paragraphs still follow `showPostChartNotes`.
+   * `report-panel` — PDF / narrow embed: extra margins, ISO codes beside anchor + highlight bubbles (staggered),
+   * plus the prose caption under the plot. Context/recommendation paragraphs still follow `showPostChartNotes`.
    */
   variant?: "default" | "report-panel";
 };
@@ -191,11 +267,28 @@ export default function GeographicRiskBubbleChart({
 }: Props) {
   const isReportPanel = variant === "report-panel";
   const data = buildGeoBubbleRows(geo);
+
+  const reportAnchor = data.find((d) => d.tier === "red");
+  const reportHighlights = [...data]
+    .filter((d) => d.tier === "amber")
+    .sort((a, b) => b.rate - a.rate || b.fraud - a.fraud);
+  const amberCodes = reportHighlights.map((d) => d.labelCode);
+  const highlightLabelOrder = new Map(reportHighlights.map((d, i) => [d.country, i] as const));
+  const reportAmberSides = ["R", "L", "T", "B"] as const;
+
   const scatterData: GeoBubbleRow[] = isReportPanel
-    ? data.map((d) => ({
-        ...d,
-        __showPointLabel: d.tier === "red" || d.tier === "amber",
-      }))
+    ? data.map((d) => {
+        if (d.tier === "red") {
+          return { ...d, __showPointLabel: true };
+        }
+        if (d.tier === "amber") {
+          const hi = highlightLabelOrder.get(d.country) ?? 0;
+          const side = reportAmberSides[hi % 4];
+          const slot = Math.floor(hi / 4);
+          return { ...d, __showPointLabel: true, __reportLabelSide: side, __reportLabelSlot: slot };
+        }
+        return { ...d, __showPointLabel: false };
+      })
     : data;
   const maxRate = Math.max(...data.map((d) => d.rate), 1);
   const yMax = Math.min(24, Math.max(8, Math.ceil((maxRate * 1.18) / 2) * 2));
@@ -205,7 +298,7 @@ export default function GeographicRiskBubbleChart({
 
   const m =
     isReportPanel
-      ? { top: 10, right: 12, bottom: 42, left: 36 }
+      ? { top: 14, right: 14, bottom: 62, left: 52 }
       : tooltipVariant === "report"
         ? { top: 8, right: 10, bottom: 44, left: 4 }
         : compact
@@ -218,11 +311,11 @@ export default function GeographicRiskBubbleChart({
     fill: "#6b6b80",
     fontWeight: 600 as const,
   };
-
-  const amberCodes = [...data]
-    .filter((d) => d.tier === "amber")
-    .sort((a, b) => b.rate - a.rate || b.fraud - a.fraud)
-    .map((d) => d.labelCode);
+  const reportPanelAxisLabelStyle = {
+    ...axisLabelStyle,
+    textAnchor: "middle" as const,
+    dominantBaseline: "middle" as const,
+  };
 
   const methodology = (
     <>
@@ -235,13 +328,19 @@ export default function GeographicRiskBubbleChart({
       <p style={{ margin: 0, lineHeight: 1.6 }}>
         <strong style={{ color: RED }}>Red</strong> = single anchor: #1 country by fraud <em>volume</em>.{" "}
         <strong style={{ color: AMBER }}>Amber</strong> = union of top 6 by rate and top 6 by volume (excluding the anchor).{" "}
-        <strong>Grey-blue</strong> = all other eligible countries. Amber codes are listed under the chart so labels do not overlap in dense corners.
+        <strong>Grey-blue</strong> = all other eligible countries. In print/PDF, ISO codes sit beside the anchor and highlight bubbles (placement alternates around each point to limit overlap).
       </p>
     </>
   );
 
   return (
-    <div style={{ overflow: "visible" }}>
+    <div
+      style={
+        isReportPanel
+          ? { overflow: "visible", width: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", boxSizing: "border-box" as const }
+          : { overflow: "visible" }
+      }
+    >
       {showHeading ? (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: compact ? 10 : 12 }}>
           <p
@@ -262,7 +361,7 @@ export default function GeographicRiskBubbleChart({
           {showMethodHint ? <MethodHint label="Chart method">{methodology}</MethodHint> : null}
         </div>
       ) : null}
-      <div style={{ width: "100%", height }}>
+      <div style={{ width: "100%", height, flexShrink: 0, boxSizing: "border-box" as const }}>
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={m}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical />
@@ -272,6 +371,7 @@ export default function GeographicRiskBubbleChart({
               scale="log"
               domain={[minFraud, xHi]}
               allowDataOverflow={false}
+              {...(isReportPanel ? { ticks: reportAxisLogXTicks(minFraud, xHi) } : {})}
               tick={{
                 fill: "#a3a3a3",
                 fontSize: axisTickFs,
@@ -284,18 +384,27 @@ export default function GeographicRiskBubbleChart({
                 if (v >= 1000) return `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k`;
                 return String(Math.round(v));
               }}
-              label={{
-                value: "Fraud txns (log) → volume",
-                position: "bottom",
-                offset: isReportPanel ? 30 : tooltipVariant === "report" ? 32 : compact ? 38 : 40,
-                style: axisLabelStyle,
-              }}
+              label={
+                isReportPanel
+                  ? {
+                      value: "Fraud txn count (log scale)",
+                      position: "bottom",
+                      offset: 22,
+                      style: reportPanelAxisLabelStyle,
+                    }
+                  : {
+                      value: "Fraud txns (log) → volume",
+                      position: "bottom",
+                      offset: tooltipVariant === "report" ? 32 : compact ? 38 : 40,
+                      style: axisLabelStyle,
+                    }
+              }
             />
             <YAxis
               type="number"
               dataKey="rate"
               domain={[0, yMax]}
-              tickCount={compact ? 8 : 9}
+              {...(!isReportPanel ? { tickCount: compact ? 8 : 9 } : { ticks: reportAxisYTicks(yMax) })}
               tick={{
                 fill: "#a3a3a3",
                 fontSize: axisTickFs,
@@ -304,13 +413,23 @@ export default function GeographicRiskBubbleChart({
               axisLine={{ stroke: "#ebebeb" }}
               tickLine={{ stroke: "#ebebeb" }}
               tickFormatter={(v: number) => `${v}%`}
-              label={{
-                value: "Fraud rate (%) → probability",
-                angle: -90,
-                position: "insideLeft",
-                offset: tooltipVariant === "report" ? 0 : compact ? 2 : 4,
-                style: axisLabelStyle,
-              }}
+              label={
+                isReportPanel
+                  ? {
+                      value: "Fraud rate (%)",
+                      angle: -90,
+                      position: "left",
+                      offset: 4,
+                      style: reportPanelAxisLabelStyle,
+                    }
+                  : {
+                      value: "Fraud rate (%) → probability",
+                      angle: -90,
+                      position: "insideLeft",
+                      offset: tooltipVariant === "report" ? 0 : compact ? 2 : 4,
+                      style: axisLabelStyle,
+                    }
+              }
             />
             <ZAxis
               type="number"
@@ -338,44 +457,37 @@ export default function GeographicRiskBubbleChart({
       {isReportPanel && data.length > 0 ? (
         <div
           style={{
-            marginTop: 6,
-            padding: "7px 9px",
+            marginTop: 20,
+            width: "100%",
+            boxSizing: "border-box",
+            flexShrink: 0,
+            padding: "12px 14px 13px",
             fontSize: 8.5,
-            lineHeight: 1.45,
+            lineHeight: 1.58,
             color: "#404040",
             background: "#fafafa",
             border: "1px solid #e8e8e8",
-            borderRadius: 4,
+            borderRadius: 6,
             fontFamily:
               'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif',
           }}
         >
-          {(() => {
-            const anchor = data.find((d) => d.tier === "red");
-            const highlights = [...data]
-              .filter((d) => d.tier === "amber")
-              .sort((a, b) => b.rate - a.rate || b.fraud - a.fraud);
-            return (
-              <>
-                {anchor ? (
-                  <p style={{ margin: "0 0 5px", color: "#171717" }}>
-                    <strong>Volume anchor.</strong> {regionDisplayName(anchor.country)} ({anchor.country}) —{" "}
-                    {fmt(anchor.fraud)} fraud txns · {anchor.rate}% rate · {fmtRawAmountMajor(anchor.fraud_amount)} loss.
-                  </p>
-                ) : null}
-                {highlights.length > 0 ? (
-                  <p style={{ margin: 0, color: "#525252" }}>
-                    <strong>Highlighted (top rate / volume pool).</strong>{" "}
-                    {highlights.map((d) => `${regionDisplayName(d.country)} (${d.country})`).join(" · ")}
-                  </p>
-                ) : (
-                  <p style={{ margin: 0, color: "#737373" }}>
-                    No additional highlight pool in this slice (anchor only). Grey bubbles = other merchant countries meeting the min-n rule.
-                  </p>
-                )}
-              </>
-            );
-          })()}
+            {reportAnchor ? (
+              <p style={{ margin: "0 0 9px", color: "#171717" }}>
+                <strong>Volume anchor.</strong> {regionDisplayName(reportAnchor.country)} ({reportAnchor.country}) —{" "}
+                {fmt(reportAnchor.fraud)} fraud txns · {reportAnchor.rate}% rate · {fmtRawAmountMajor(reportAnchor.fraud_amount)} loss.
+              </p>
+            ) : null}
+            {reportHighlights.length > 0 ? (
+              <p style={{ margin: 0, color: "#525252" }}>
+                <strong>Highlighted (top rate / volume pool).</strong>{" "}
+                {reportHighlights.map((d) => `${regionDisplayName(d.country)} (${d.country})`).join(" · ")}
+              </p>
+            ) : (
+              <p style={{ margin: 0, color: "#737373" }}>
+                No additional highlight pool in this slice (anchor only). Grey bubbles = other merchant countries meeting the min-n rule.
+              </p>
+            )}
         </div>
       ) : null}
 
